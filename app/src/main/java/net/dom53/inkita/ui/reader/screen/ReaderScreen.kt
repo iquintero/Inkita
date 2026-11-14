@@ -77,6 +77,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -245,6 +246,9 @@ internal fun BaseReaderScreen(
     var showOverlay by remember { mutableStateOf(true) }
     var showSettingsPanel by remember { mutableStateOf(false) }
     var showToc by remember { mutableStateOf(false) }
+    // Last measured overlay bar heights; kept while the bars are hidden so paged layout stays stable.
+    var topBarPx by remember { mutableStateOf(0) }
+    var bottomBarPx by remember { mutableStateOf(0) }
     var pagedPage by remember { mutableStateOf(0) }
     var pagedTotal by remember { mutableStateOf(0) }
     var selectedSettingsTab by remember { mutableStateOf(ReaderSettingsTab.Font) }
@@ -431,6 +435,8 @@ internal fun BaseReaderScreen(
                     pdfRightToLeft = readerPrefs.pdfRightToLeft,
                     epubPaged = pagedEnabled,
                     openAtEnd = uiState.openAtEnd,
+                    insetTopPx = topBarPx,
+                    insetBottomPx = bottomBarPx,
                 ),
             callbacks =
                 ReaderRenderCallbacks(
@@ -487,7 +493,8 @@ internal fun BaseReaderScreen(
                     modifier =
                         Modifier
                             .align(Alignment.TopStart)
-                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)),
+                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.92f))
+                            .onSizeChanged { if (it.height > 0) topBarPx = it.height },
                 )
             }
 
@@ -620,7 +627,8 @@ internal fun BaseReaderScreen(
                     enableSettings = bottomBarState.enableSettings,
                     modifier =
                         Modifier
-                            .align(Alignment.BottomCenter),
+                            .align(Alignment.BottomCenter)
+                            .onSizeChanged { if (it.height > 0) bottomBarPx = it.height },
                 )
             }
 
@@ -1410,6 +1418,8 @@ internal fun ReaderWebView(
     openAtEnd: Boolean = false,
     onConsumeOpenAtEnd: () -> Unit = {},
     onPagedChanged: (Int, Int) -> Unit = { _, _ -> },
+    insetTopPx: Int = 0,
+    insetBottomPx: Int = 0,
 ) {
     if (html.isBlank()) return
     val context = LocalContext.current
@@ -1516,127 +1526,149 @@ internal fun ReaderWebView(
         """
         }
 
-    AndroidView(
-        modifier = Modifier.fillMaxSize(),
-        factory = { context ->
-            val swipeThreshold = 120
-            val swipeVelocityThreshold = 200
-            var tappedView: WebView? = null
-            val gestureDetector =
-                GestureDetector(
-                    context,
-                    object : GestureDetector.SimpleOnGestureListener() {
-                        override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
-                            val width = tappedView?.width ?: 0
-                            if (currentPaged && width > 0) {
-                                when {
-                                    e.x < width * PAGED_TAP_ZONE -> currentSwipePrev()
-                                    e.x > width * (1f - PAGED_TAP_ZONE) -> currentSwipeNext()
-                                    else -> onToggleOverlay()
+    val density = LocalDensity.current
+    val pageBackground = runCatching { Color(android.graphics.Color.parseColor(bgColor)) }.getOrDefault(Color.Transparent)
+    Box(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .then(if (paged) Modifier.background(pageBackground) else Modifier),
+    ) {
+        AndroidView(
+            // Paged mode keeps the page between the top and bottom bars so the bars never hide text.
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .then(
+                        if (paged) {
+                            Modifier.padding(
+                                top = with(density) { insetTopPx.toDp() },
+                                bottom = with(density) { insetBottomPx.toDp() },
+                            )
+                        } else {
+                            Modifier
+                        },
+                    ),
+            factory = { context ->
+                val swipeThreshold = 120
+                val swipeVelocityThreshold = 200
+                var tappedView: WebView? = null
+                val gestureDetector =
+                    GestureDetector(
+                        context,
+                        object : GestureDetector.SimpleOnGestureListener() {
+                            override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
+                                val width = tappedView?.width ?: 0
+                                if (currentPaged && width > 0) {
+                                    when {
+                                        e.x < width * PAGED_TAP_ZONE -> currentSwipePrev()
+                                        e.x > width * (1f - PAGED_TAP_ZONE) -> currentSwipeNext()
+                                        else -> onToggleOverlay()
+                                    }
+                                } else {
+                                    onToggleOverlay()
                                 }
-                            } else {
-                                onToggleOverlay()
-                            }
-                            return true
-                        }
-
-                        override fun onFling(
-                            e1: MotionEvent?,
-                            e2: MotionEvent,
-                            velocityX: Float,
-                            velocityY: Float,
-                        ): Boolean {
-                            if (e1 == null) return false
-                            val diffX = e2.x - e1.x
-                            val diffY = e2.y - e1.y
-                            if (abs(diffX) > abs(diffY) &&
-                                abs(diffX) > swipeThreshold &&
-                                abs(velocityX) > swipeVelocityThreshold
-                            ) {
-                                if (diffX < 0) onSwipeNext() else onSwipePrev()
                                 return true
                             }
-                            return false
-                        }
-                    },
-                )
-            WebView(context).apply {
-                tappedView = this
-                addJavascriptInterface(
-                    object {
-                        @JavascriptInterface
-                        fun onPage(
-                            current: Int,
-                            total: Int,
-                        ) {
-                            post { currentOnPagedChanged(current, total) }
-                        }
-                    },
-                    PAGED_BRIDGE_NAME,
-                )
-                configureEpubWebView({ currentContent }) { view ->
-                    view.evaluateJavascript(currentStyle, null)
-                    if (currentPaged) {
-                        view.evaluateJavascript(pagedStartJs(currentScrollId, currentOpenAtEnd), null)
-                        consumeScrollId()
-                        consumeOpenAtEnd()
-                        currentScrollY?.let { consumeScroll() }
-                        return@configureEpubWebView
-                    }
-                    currentScrollId?.let { id ->
-                        view.evaluateJavascript(epubScrollToElementJs(id), null)
-                        consumeScrollId()
-                    }
-                    currentScrollY?.let { y ->
-                        view.post {
-                            view.scrollTo(0, y)
-                            view.postDelayed({ view.scrollTo(0, y) }, 50)
-                        }
-                        consumeScroll()
-                    }
-                }
-                setOnTouchListener { _, event ->
-                    gestureDetector.onTouchEvent(event)
-                    // Paged mode turns pages itself, so the WebView must not scroll under the finger.
-                    currentPaged
-                }
-                setOnScrollChangeListener { _, _, _, _, _ ->
-                    scrollRunnable?.let { scrollHandler.removeCallbacks(it) }
-                    scrollRunnable =
-                        Runnable {
-                            val script = if (currentPaged) PAGED_ANCHOR_JS else scrollIdJs
-                            evaluateJavascript(script) { result ->
-                                val id = result?.let { org.json.JSONTokener(it).nextValue() as? String }
-                                onScrollIdle(id)
+
+                            override fun onFling(
+                                e1: MotionEvent?,
+                                e2: MotionEvent,
+                                velocityX: Float,
+                                velocityY: Float,
+                            ): Boolean {
+                                if (e1 == null) return false
+                                val diffX = e2.x - e1.x
+                                val diffY = e2.y - e1.y
+                                if (abs(diffX) > abs(diffY) &&
+                                    abs(diffX) > swipeThreshold &&
+                                    abs(velocityX) > swipeVelocityThreshold
+                                ) {
+                                    if (diffX < 0) onSwipeNext() else onSwipePrev()
+                                    return true
+                                }
+                                return false
                             }
+                        },
+                    )
+                WebView(context).apply {
+                    tappedView = this
+                    addJavascriptInterface(
+                        object {
+                            @JavascriptInterface
+                            fun onPage(
+                                current: Int,
+                                total: Int,
+                            ) {
+                                post { currentOnPagedChanged(current, total) }
+                            }
+                        },
+                        PAGED_BRIDGE_NAME,
+                    )
+                    configureEpubWebView({ currentContent }) { view ->
+                        view.evaluateJavascript(currentStyle, null)
+                        if (currentPaged) {
+                            view.evaluateJavascript(pagedStartJs(currentScrollId, currentOpenAtEnd), null)
+                            consumeScrollId()
+                            consumeOpenAtEnd()
+                            currentScrollY?.let { consumeScroll() }
+                            return@configureEpubWebView
                         }
-                    scrollHandler.postDelayed(scrollRunnable!!, 300)
-                }
-                onWebViewReady(this)
-            }
-        },
-        update = { webView ->
-            webView.setBackgroundColor(Color.Transparent.toArgb())
-            if (loadedContent !== content) {
-                loadedContent = content
-                content.load(webView, cssBlock)
-            } else {
-                webView.evaluateJavascript(styleJs, null)
-            }
-            if (paged) {
-                // Paged mode keeps its own horizontal position; a vertical scroll offset would reset it.
-                pendingScrollY?.let { onConsumePendingScroll() }
-            } else if (content.isDocumentUrl(webView.url) && webView.progress == 100) {
-                pendingScrollY?.let { y ->
-                    webView.post {
-                        webView.scrollTo(0, y)
+                        currentScrollId?.let { id ->
+                            view.evaluateJavascript(epubScrollToElementJs(id), null)
+                            consumeScrollId()
+                        }
+                        currentScrollY?.let { y ->
+                            view.post {
+                                view.scrollTo(0, y)
+                                view.postDelayed({ view.scrollTo(0, y) }, 50)
+                            }
+                            consumeScroll()
+                        }
                     }
-                    webView.postDelayed({ webView.scrollTo(0, y) }, 50)
-                    onConsumePendingScroll()
+                    setOnTouchListener { _, event ->
+                        gestureDetector.onTouchEvent(event)
+                        // Paged mode turns pages itself, so the WebView must not scroll under the finger.
+                        currentPaged
+                    }
+                    setOnScrollChangeListener { _, _, _, _, _ ->
+                        scrollRunnable?.let { scrollHandler.removeCallbacks(it) }
+                        scrollRunnable =
+                            Runnable {
+                                val script = if (currentPaged) PAGED_ANCHOR_JS else scrollIdJs
+                                evaluateJavascript(script) { result ->
+                                    val id = result?.let { org.json.JSONTokener(it).nextValue() as? String }
+                                    onScrollIdle(id)
+                                }
+                            }
+                        scrollHandler.postDelayed(scrollRunnable!!, 300)
+                    }
+                    onWebViewReady(this)
                 }
-            }
-        },
-    )
+            },
+            update = { webView ->
+                webView.setBackgroundColor(Color.Transparent.toArgb())
+                if (loadedContent !== content) {
+                    loadedContent = content
+                    content.load(webView, cssBlock)
+                } else {
+                    webView.evaluateJavascript(styleJs, null)
+                }
+                if (paged) {
+                    // Paged mode keeps its own horizontal position; a vertical scroll offset would reset it.
+                    pendingScrollY?.let { onConsumePendingScroll() }
+                } else if (content.isDocumentUrl(webView.url) && webView.progress == 100) {
+                    pendingScrollY?.let { y ->
+                        webView.post {
+                            webView.scrollTo(0, y)
+                        }
+                        webView.postDelayed({ webView.scrollTo(0, y) }, 50)
+                        onConsumePendingScroll()
+                    }
+                }
+            },
+        )
+    }
 }
 
 private fun epubScrollToElementJs(id: String): String {

@@ -66,6 +66,8 @@ object EpubReader : BaseReader {
             openAtEnd = params.openAtEnd,
             onConsumeOpenAtEnd = callbacks.onConsumeOpenAtEnd,
             onPagedChanged = callbacks.onEpubPageChanged,
+            insetTopPx = params.insetTopPx,
+            insetBottomPx = params.insetBottomPx,
         )
     }
 }

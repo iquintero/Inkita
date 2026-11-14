@@ -38,6 +38,8 @@ data class ReaderRenderParams(
     val pdfRightToLeft: Boolean = false,
     val epubPaged: Boolean = false,
     val openAtEnd: Boolean = false,
+    val insetTopPx: Int = 0,
+    val insetBottomPx: Int = 0,
 )
 
 data class ReaderRenderCallbacks(
