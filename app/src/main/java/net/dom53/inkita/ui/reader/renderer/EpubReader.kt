@@ -62,6 +62,10 @@ object EpubReader : BaseReader {
             pendingScrollId = params.pendingScrollId,
             onConsumeScrollId = callbacks.onConsumeScrollId,
             onScrollIdle = callbacks.onScrollIdle,
+            paged = params.epubPaged,
+            openAtEnd = params.openAtEnd,
+            onConsumeOpenAtEnd = callbacks.onConsumeOpenAtEnd,
+            onPagedChanged = callbacks.onEpubPageChanged,
         )
     }
 }

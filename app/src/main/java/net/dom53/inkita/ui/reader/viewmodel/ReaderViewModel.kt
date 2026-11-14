@@ -11,6 +11,7 @@ import net.dom53.inkita.domain.model.ReaderBookInfo
 import net.dom53.inkita.domain.model.ReaderChapterNav
 import net.dom53.inkita.domain.model.ReaderProgress
 import net.dom53.inkita.domain.model.ReaderTimeLeft
+import net.dom53.inkita.domain.model.ReaderTocItem
 import net.dom53.inkita.domain.reader.BaseReader
 import net.dom53.inkita.domain.reader.ReaderLoadResult
 
@@ -33,6 +34,9 @@ data class ReaderUiState(
     val bookScrollId: String? = null,
     val isPdf: Boolean = false,
     val pdfPath: String? = null,
+    val toc: List<ReaderTocItem> = emptyList(),
+    /** EPUB paged mode: open the loaded page on its last screen (used when paging backwards). */
+    val openAtEnd: Boolean = false,
 )
 
 data class WebtoonChapterUiState(
@@ -87,16 +91,49 @@ abstract class BaseReaderViewModel(
             }
             loadInitialContent(pageToOpen)
             loadTimeLeft()
+            loadToc()
         }
     }
 
+    private fun loadToc() {
+        if (reader.format != Format.Epub) return
+        viewModelScope.launch {
+            val toc = runCatching { reader.getToc(chapterId) }.getOrDefault(emptyList())
+            _state.update { it.copy(toc = toc) }
+        }
+    }
+
+    private var targetScrollId: String? = null
+    private var targetOpenAtEnd = false
+
+    /** Loads [index] and, once it is shown, positions the reader at [scrollId] (or at the end of the page). */
+    fun loadPage(
+        index: Int,
+        scrollId: String?,
+        openAtEnd: Boolean = false,
+    ) {
+        targetScrollId = scrollId
+        targetOpenAtEnd = openAtEnd
+        loadPage(index)
+    }
+
+    fun consumeOpenAtEnd() {
+        _state.update { it.copy(openAtEnd = false) }
+    }
+
     open fun loadPage(index: Int) {
+        val scrollId = targetScrollId
+        val openAtEnd = targetOpenAtEnd
+        targetScrollId = null
+        targetOpenAtEnd = false
         viewModelScope.launch {
             val previous = _state.value
             _state.update { it.copy(isLoading = true, error = null) }
             runCatching { reader.loadPage(chapterId, index) }
                 .onSuccess { result ->
                     applyLoadResult(result, index)
+                    // A new page must not inherit the previous page's scroll position.
+                    _state.update { it.copy(bookScrollId = scrollId, openAtEnd = openAtEnd) }
                     updateProgress(index)
                     if (_state.value.bookInfo?.pages == null) {
                         val info = runCatching { reader.getBookInfo(chapterId) }.getOrNull()
