@@ -22,7 +22,6 @@ internal val PAGED_RUNTIME_JS =
     (function() {
         if (window.__ik) return;
         var ik = window.__ik = {};
-        var MARGIN = 2;
         var mask = null;
         var items = null;
         var stops = [0];
@@ -108,12 +107,19 @@ internal val PAGED_RUNTIME_JS =
                 var limit = y + h;
                 var next = null;
                 var more = false;
+                var above = y;
                 for (var i = 0; i < items.length; i++) {
                     if (items[i].bottom > limit + 0.5) {
                         more = true;
-                        if (items[i].top > y + 1) next = items[i].top - MARGIN;
+                        if (items[i].top > y + 1) {
+                            // Start between the previous line's bottom and this line's top, so neither the
+                            // previous line's descenders nor this line's ascenders end up clipped or visible.
+                            // Line boxes can overlap slightly; the boundary then falls in the middle of the overlap.
+                            next = Math.round((above + items[i].top) / 2);
+                        }
                         break;
                     }
+                    if (items[i].bottom > above) above = items[i].bottom;
                 }
                 if (!more) break;
                 if (next === null || next - y < h * 0.4) next = y + h;
