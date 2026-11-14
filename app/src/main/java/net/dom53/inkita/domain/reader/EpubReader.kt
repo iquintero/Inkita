@@ -34,6 +34,10 @@ class EpubReader(
 
     override suspend fun getToc(chapterId: Int): List<ReaderTocItem> = readerRepository.getToc(chapterId)
 
+    override suspend fun getLocalProgress(chapterId: Int): ReaderProgress? = readerRepository.getLocalProgress(chapterId)
+
+    override suspend fun getCachedBookInfo(chapterId: Int): ReaderBookInfo? = readerRepository.getCachedBookInfo(chapterId)
+
     override suspend fun getProgress(chapterId: Int): ReaderProgress? = readerRepository.getProgress(chapterId)
 
     override suspend fun setProgress(

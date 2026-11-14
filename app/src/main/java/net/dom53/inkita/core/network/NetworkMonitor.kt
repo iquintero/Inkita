@@ -18,7 +18,9 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -103,6 +105,16 @@ class NetworkMonitor private constructor(
                 SharingStarted.Eagerly,
                 snapshot().copy(offlineMode = runBlocking { preferences.offlineModeFlow.first() }),
             )
+
+    init {
+        // A different connection (e.g. mobile data to home wifi) may reach the server again.
+        scope.launch {
+            status
+                .map { it.connectionType }
+                .distinctUntilChanged()
+                .collect { ServerReachability.reset() }
+        }
+    }
 
     fun isOnline(): Boolean = status.value.isOnlineAllowed
 

@@ -7,6 +7,7 @@ import net.dom53.inkita.core.downloadv2.DownloadPaths
 import net.dom53.inkita.core.downloadv2.DownloadStorageManager
 import net.dom53.inkita.core.network.KavitaApiFactory
 import net.dom53.inkita.core.network.NetworkMonitor
+import net.dom53.inkita.core.network.ServerReachability
 import net.dom53.inkita.core.storage.AppPreferences
 import net.dom53.inkita.core.storage.KavitaProfile
 import net.dom53.inkita.core.sync.ProgressSyncWorker
@@ -82,7 +83,10 @@ class ReaderRepositoryImpl(
         val cached = readerDao.getPage(chapterId, page)?.html
 
         if (!isOnlineAllowed()) {
-            return downloadedPage() ?: throw PageNotDownloadedException("Page not downloaded for offline reading")
+            // Without the server: a downloaded copy, else the text of a page that was read before (images need the server).
+            return downloadedPage()
+                ?: cached?.let { ReaderPageResult(it, false) }
+                ?: throw PageNotDownloadedException("Page not downloaded for offline reading")
         }
 
         if (preferOffline) downloadedPage()?.let { return it }
@@ -451,6 +455,10 @@ class ReaderRepositoryImpl(
             }
         }.getOrNull() ?: getOfflineBookInfo(chapterId)
 
+    override suspend fun getLocalProgress(chapterId: Int): ReaderProgress? = readerDao.getLocalProgress(chapterId)?.toDomain()
+
+    override suspend fun getCachedBookInfo(chapterId: Int): ReaderBookInfo? = getOfflineBookInfo(chapterId)
+
     override suspend fun getToc(chapterId: Int): List<ReaderTocItem> {
         synchronized(tocCache) { tocCache[chapterId] }?.let { return it }
         if (!isOnlineAllowed()) return emptyList()
@@ -762,10 +770,11 @@ class ReaderRepositoryImpl(
         chapterId: Int,
     ): File? = downloadStorageManager.fileForReading(path, "archive-reader", "chapter-$chapterId.cbz")
 
+    // "Online" also means the server answered recently: on mobile data a home server just hangs until it times out.
     private fun isOnlineAllowed(): Boolean =
         NetworkMonitor
             .getInstance(context, appPreferences)
-            .status.value.isOnlineAllowed
+            .status.value.isOnlineAllowed && !ServerReachability.isUnreachable()
 
     private suspend fun getOfflineBookInfo(chapterId: Int): ReaderBookInfo? {
         val items = downloadV2Dao?.getItemsForChapter(chapterId).orEmpty()

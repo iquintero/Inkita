@@ -97,7 +97,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import net.dom53.inkita.R
+import net.dom53.inkita.core.network.NetworkMonitor
 import net.dom53.inkita.core.network.NetworkUtils
+import net.dom53.inkita.core.network.ServerReachability
 import net.dom53.inkita.core.storage.AppConfig
 import net.dom53.inkita.core.storage.AppPreferences
 import net.dom53.inkita.core.storage.ImageReaderMode
@@ -261,6 +263,9 @@ internal fun BaseReaderScreen(
     val isPdfReader = renderer == PdfReader
     val supportsReaderSettings = renderer.supportsTextSettings || isImageReader || isPdfReader
     val pagedEnabled = readerPrefs.epubPaged && renderer === net.dom53.inkita.ui.reader.renderer.EpubReader
+    val networkStatus by remember { NetworkMonitor.getInstance(context, appPreferences) }.status.collectAsState()
+    val serverUnreachable by ServerReachability.unreachable.collectAsState()
+    val withoutServer = !networkStatus.isOnlineAllowed || serverUnreachable
     LaunchedEffect(uiState.pageIndex, pagedEnabled) {
         pagedPage = 0
         pagedTotal = 0
@@ -677,7 +682,8 @@ internal fun BaseReaderScreen(
             }
 
             AnimatedVisibility(
-                visible = uiState.fromOffline,
+                // Shown while the server cannot be used, not merely because the page came from a download.
+                visible = withoutServer,
                 modifier = Modifier.align(Alignment.TopCenter).padding(top = 40.dp),
             ) {
                 Box(

@@ -61,6 +61,12 @@ interface ReaderRepository {
 
     suspend fun getBookInfo(chapterId: Int): ReaderBookInfo?
 
+    /** Reading progress stored on this device only; never touches the network. */
+    suspend fun getLocalProgress(chapterId: Int): ReaderProgress? = null
+
+    /** Book info reconstructed from downloaded files; never touches the network. */
+    suspend fun getCachedBookInfo(chapterId: Int): ReaderBookInfo? = null
+
     /** Table of contents of an EPUB, empty when unavailable (e.g. offline). */
     suspend fun getToc(chapterId: Int): List<ReaderTocItem> = emptyList()
 

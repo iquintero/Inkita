@@ -10,10 +10,14 @@ import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.converter.scalars.ScalarsConverterFactory
+import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 object KavitaApiFactory {
     private const val DEFAULT_TIMEOUT_SECONDS = 30L
+
+    // An unreachable server (e.g. a home server on mobile data) should be noticed quickly.
+    private const val CONNECT_TIMEOUT_SECONDS = 8L
 
     private fun baseRetrofitBuilder(
         baseUrl: String,
@@ -63,14 +67,25 @@ object KavitaApiFactory {
                 chain.proceed(newRequest)
             }
 
+        val reachabilityInterceptor =
+            Interceptor { chain ->
+                try {
+                    chain.proceed(chain.request()).also { ServerReachability.markReachable() }
+                } catch (error: IOException) {
+                    if (ServerReachability.isConnectFailure(error)) ServerReachability.markUnreachable()
+                    throw error
+                }
+            }
+
         val client =
             OkHttpClient
                 .Builder()
+                .addInterceptor(reachabilityInterceptor)
                 .addInterceptor(apiKeyInterceptor)
                 .addInterceptor(NetworkLoggingInterceptor)
                 .followRedirects(followRedirects)
                 .callTimeout(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-                .connectTimeout(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 .readTimeout(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 .writeTimeout(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 .build()

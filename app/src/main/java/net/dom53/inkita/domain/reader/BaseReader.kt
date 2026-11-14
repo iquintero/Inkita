@@ -24,6 +24,10 @@ interface BaseReader {
 
     suspend fun getToc(chapterId: Int): List<ReaderTocItem> = emptyList()
 
+    suspend fun getLocalProgress(chapterId: Int): ReaderProgress? = null
+
+    suspend fun getCachedBookInfo(chapterId: Int): ReaderBookInfo? = null
+
     suspend fun getProgress(chapterId: Int): ReaderProgress?
 
     suspend fun setProgress(

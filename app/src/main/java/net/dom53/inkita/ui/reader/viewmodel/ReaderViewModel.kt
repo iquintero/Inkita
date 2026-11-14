@@ -2,10 +2,12 @@ package net.dom53.inkita.ui.reader.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import net.dom53.inkita.domain.model.Format
 import net.dom53.inkita.domain.model.ReaderBookInfo
 import net.dom53.inkita.domain.model.ReaderChapterNav
@@ -53,6 +55,9 @@ data class WebtoonChapterUiState(
     val hasNextChapter: Boolean? = null,
 )
 
+/** How long opening a book waits for server metadata before using what is stored on the device. */
+private const val METADATA_WAIT_MS = 1_500L
+
 @Suppress("VariableNaming", "ktlint:standard:backing-property-naming")
 abstract class BaseReaderViewModel(
     protected val chapterId: Int,
@@ -72,8 +77,31 @@ abstract class BaseReaderViewModel(
     fun loadInitial() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null, timeLeft = null) }
-            val savedProgress = runCatching { reader.getProgress(chapterId) }.getOrNull()
-            val info = runCatching { reader.getBookInfo(chapterId) }.getOrNull()
+            val progressRequest = async { runCatching { reader.getProgress(chapterId) }.getOrNull() }
+            val infoRequest = async { runCatching { reader.getBookInfo(chapterId) }.getOrNull() }
+            val savedProgress: ReaderProgress?
+            val info: ReaderBookInfo?
+            if (reader.format == Format.Epub) {
+                // The server may be slow or unreachable (e.g. a home server on mobile data). Give it a moment,
+                // then open from what is stored on this device instead of leaving the page blank.
+                val deadline = System.currentTimeMillis() + METADATA_WAIT_MS
+                val remaining = { (deadline - System.currentTimeMillis()).coerceAtLeast(0L) }
+                savedProgress =
+                    withTimeoutOrNull(remaining()) { progressRequest.await() }
+                        ?: runCatching { reader.getLocalProgress(chapterId) }.getOrNull()
+                info =
+                    withTimeoutOrNull(remaining()) { infoRequest.await() }
+                        ?: runCatching { reader.getCachedBookInfo(chapterId) }.getOrNull()
+                launch {
+                    // Whatever the server answers later still refines the page count and title.
+                    infoRequest.await()?.let { late ->
+                        _state.update { it.copy(bookInfo = late, pageCount = late.pages ?: it.pageCount) }
+                    }
+                }
+            } else {
+                savedProgress = progressRequest.await()
+                info = infoRequest.await()
+            }
             val totalPages = info?.pages ?: 0
             val pageToOpen =
                 if (reader.format == Format.Image && totalPages > 0) {

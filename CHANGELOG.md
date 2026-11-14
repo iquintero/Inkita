@@ -11,6 +11,7 @@ All notable changes to this project will be documented here.
 
 ### Fixed
 
+- Open downloaded books right away when the Kavita server cannot be reached (for example a home server on mobile data) instead of showing a blank page for up to a minute. Inkita now notices an unreachable server within seconds, skips server calls for a minute, and reads downloaded pages, saved reading positions and previously read pages from the device. Switching networks, such as back to home wifi, resets this. The "Reading offline" label now only shows while the server cannot be used, instead of whenever a page was read from a download.
 - Open a new EPUB page at its start instead of reusing the previous page's scroll position.
 
 - Fix a database migration that could prevent Inkita from opening after an upgrade from older versions such as v0.2.0-beta.2.
