@@ -6,52 +6,11 @@ import org.json.JSONObject
  * Optional "Kindle style" pagination for EPUB content.
  *
  * Kavita serves an EPUB as a list of spine files ("pages"), each of which is usually a whole book chapter.
- * In paged mode the loaded document is laid out as CSS columns exactly one screen wide, so a Kavita page
- * becomes N screen-sized pages that are turned horizontally instead of scrolled vertically.
+ * Paged mode keeps the normal vertical layout (so books render exactly as in scroll mode) and moves through
+ * it one screenful at a time. Every stop is snapped to a line boundary so text is never cut in half.
+ * Native touch scrolling is disabled by the caller while this is active.
  */
 internal const val PAGED_BRIDGE_NAME = "InkitaPaged"
-
-private const val MIN_PAGED_SIDE_PX = 16f
-private const val MIN_PAGED_VERTICAL_PX = 24f
-
-internal fun pagedSidePx(paddingPx: Float): Float = maxOf(paddingPx, MIN_PAGED_SIDE_PX)
-
-internal fun pagedVerticalPx(paddingPx: Float): Float = maxOf(paddingPx / 2f, MIN_PAGED_VERTICAL_PX)
-
-/** CSS appended after the regular reader CSS when paged mode is on. */
-internal fun pagedCss(paddingPx: Float): String {
-    val side = pagedSidePx(paddingPx)
-    val vertical = pagedVerticalPx(paddingPx)
-    return """
-        html {
-            overflow: hidden !important;
-            width: 100% !important;
-            height: 100% !important;
-        }
-        body {
-            box-sizing: border-box !important;
-            margin: 0 !important;
-            width: 100vw !important;
-            height: 100vh !important;
-            padding: ${vertical}px ${side}px !important;
-            overflow: visible !important;
-            column-width: calc(100vw - ${side * 2}px) !important;
-            column-gap: ${side * 2}px !important;
-            column-fill: auto !important;
-        }
-        .book-content {
-            padding: 0 !important;
-            margin: 0 !important;
-        }
-        img, svg, video {
-            max-width: 100% !important;
-            max-height: calc(100vh - ${vertical * 2}px) !important;
-            object-fit: contain;
-            break-inside: avoid;
-        }
-        h1, h2, h3, h4, h5, h6 { break-after: avoid; }
-        """.trimIndent()
-}
 
 /**
  * Installs `window.__ik`. Idempotent; safe to run on every document load.
@@ -63,70 +22,179 @@ internal val PAGED_RUNTIME_JS =
     (function() {
         if (window.__ik) return;
         var ik = window.__ik = {};
+        var MARGIN = 2;
+        var mask = null;
+        var items = null;
+        var stops = [0];
         var anchor = null;
+        var anchorFrac = 0;
         var timer = null;
 
-        function root() { return document.scrollingElement || document.documentElement; }
-        function width() { return Math.max(1, document.documentElement.clientWidth); }
+        function viewHeight() { return Math.max(1, window.innerHeight); }
+        function scrollTop() {
+            return window.pageYOffset || document.documentElement.scrollTop || 0;
+        }
+        function docTop(el) { return el.getBoundingClientRect().top + scrollTop(); }
 
-        ik.count = function() {
-            return Math.max(1, Math.ceil((root().scrollWidth - 1) / width()));
-        };
-        ik.current = function() {
-            return Math.max(0, Math.min(ik.count() - 1, Math.round(root().scrollLeft / width())));
-        };
+        // Every laid-out text line and image, in reading order, in document coordinates.
+        function collect() {
+            var out = [];
+            var sy = scrollTop();
+            var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
+            var range = document.createRange();
+            var node;
+            while ((node = walker.nextNode())) {
+                if (!node.nodeValue || !node.nodeValue.trim()) continue;
+                var parent = node.parentElement;
+                if (!parent) continue;
+                var tag = parent.tagName.toLowerCase();
+                if (tag === 'script' || tag === 'style') continue;
+                range.selectNodeContents(node);
+                var rects = range.getClientRects();
+                for (var i = 0; i < rects.length; i++) {
+                    if (rects[i].height < 1) continue;
+                    out.push({ top: rects[i].top + sy, bottom: rects[i].bottom + sy, el: parent });
+                }
+            }
+            var media = document.body.querySelectorAll('img, svg, video, hr');
+            for (var m = 0; m < media.length; m++) {
+                var r = media[m].getBoundingClientRect();
+                if (r.height >= 1) out.push({ top: r.top + sy, bottom: r.bottom + sy, el: media[m] });
+            }
+            out.sort(function(a, b) { return a.top - b.top || a.bottom - b.bottom; });
+            return out;
+        }
+
+        // Room after the last line so the final page can start at a line boundary and end partly empty.
+        // Styles are !important and the element is not empty so book CSS (e.g. "div:empty { display: none }")
+        // cannot collapse it.
+        var spacerExtra = 0;
+        function ensureSpacer() {
+            var spacer = document.getElementById('ik-spacer');
+            if (!spacer) {
+                spacer = document.createElement('div');
+                spacer.id = 'ik-spacer';
+                spacer.appendChild(document.createTextNode('\u00a0'));
+                document.body.appendChild(spacer);
+            }
+            var rules = {
+                display: 'block', position: 'static', float: 'none', visibility: 'hidden', overflow: 'hidden',
+                margin: '0', padding: '0', border: '0', 'font-size': '0', 'line-height': '0',
+                height: (viewHeight() + spacerExtra) + 'px', 'min-height': '0', 'max-height': 'none'
+            };
+            for (var name in rules) spacer.style.setProperty(name, rules[name], 'important');
+        }
+
+        // Scroll to a stop; if the document is too short to reach it, add room and try again.
+        function scrollToStop(index) {
+            var y = stops[index];
+            window.scrollTo(0, y);
+            var got = scrollTop();
+            if (got < y - 1) {
+                spacerExtra += Math.ceil(y - got) + 2;
+                ensureSpacer();
+                window.scrollTo(0, y);
+            }
+        }
+
+        function build() {
+            ensureSpacer();
+            items = collect();
+            stops = [0];
+            var h = viewHeight();
+            var y = 0;
+            var guard = 0;
+            while (guard++ < 20000) {
+                var limit = y + h;
+                var next = null;
+                var more = false;
+                for (var i = 0; i < items.length; i++) {
+                    if (items[i].bottom > limit + 0.5) {
+                        more = true;
+                        if (items[i].top > y + 1) next = items[i].top - MARGIN;
+                        break;
+                    }
+                }
+                if (!more) break;
+                if (next === null || next - y < h * 0.4) next = y + h;
+                stops.push(next);
+                y = next;
+            }
+            var missing = stops[stops.length - 1] + h - document.documentElement.scrollHeight;
+            if (missing > 0) {
+                spacerExtra += Math.ceil(missing) + 2;
+                ensureSpacer();
+            }
+        }
+
+        function ensure() { if (!items) build(); }
+
+        function pageForY(y) {
+            var page = 0;
+            for (var i = 0; i < stops.length; i++) { if (stops[i] <= y + 4) page = i; }
+            return page;
+        }
+
+        // A page ends at its last whole line; hide everything from the next page's first line down.
+        // The mask lives in page coordinates, so it stays glued to the text even if the viewport height or
+        // scroll offset is momentarily off by a few pixels.
+        function updateMask(page) {
+            if (!mask) {
+                mask = document.createElement('div');
+                mask.style.cssText = 'position:absolute;left:0;width:100%;z-index:2147483647;pointer-events:none;';
+                document.documentElement.appendChild(mask);
+            }
+            if (page >= stops.length - 1) {
+                mask.style.display = 'none';
+                return;
+            }
+            var bg = window.getComputedStyle(document.body).backgroundColor;
+            if (!bg || bg === 'transparent' || bg.indexOf('rgba(0, 0, 0, 0)') === 0) {
+                bg = window.getComputedStyle(document.documentElement).backgroundColor;
+            }
+            mask.style.background = bg;
+            mask.style.top = stops[page + 1] + 'px';
+            mask.style.height = viewHeight() + 'px';
+            mask.style.display = 'block';
+        }
+
+        ik.count = function() { ensure(); return stops.length; };
+        ik.current = function() { ensure(); return pageForY(scrollTop()); };
 
         function report() {
             if (window.$PAGED_BRIDGE_NAME) window.$PAGED_BRIDGE_NAME.onPage(ik.current(), ik.count());
         }
 
-        function pageOfX(x) { return Math.floor((x + 1) / width()); }
-
-        function candidates() {
-            var all = document.body.querySelectorAll('*');
-            var out = [];
-            for (var i = 0; i < all.length; i++) {
-                var el = all[i];
-                var tag = el.tagName.toLowerCase();
-                if (tag === 'script' || tag === 'style') continue;
-                var own = tag === 'img';
-                for (var c = el.firstChild; c && !own; c = c.nextSibling) {
-                    if (c.nodeType === 3 && c.nodeValue.trim().length > 0) own = true;
-                }
-                if (own) out.push(i);
+        function firstVisibleElement() {
+            ensure();
+            var y = scrollTop();
+            for (var i = 0; i < items.length; i++) {
+                if (items[i].bottom > y + 2) return items[i].el;
             }
-            return { all: all, idx: out };
+            return null;
         }
 
-        // First element whose beginning is laid out on the page that is currently showing.
-        function firstElementOnPage() {
-            var cur = ik.current();
-            var sl = root().scrollLeft;
-            var found = candidates();
-            var fallback = null;
-            for (var k = 0; k < found.idx.length; k++) {
-                var el = found.all[found.idx[k]];
-                var rects = el.getClientRects();
-                if (!rects.length) continue;
-                if (pageOfX(rects[0].left + sl) === cur) return { el: el, index: found.idx[k] };
-                if (fallback === null) {
-                    for (var r = 0; r < rects.length; r++) {
-                        if (pageOfX(rects[r].left + sl) === cur) { fallback = { el: el, index: found.idx[k] }; break; }
-                    }
-                }
-            }
-            return fallback;
+        // Remember the element at the top and how far into it we are, so a reflow can return to the same text.
+        function rememberPosition() {
+            var el = firstVisibleElement();
+            if (!el) return;
+            var rect = el.getBoundingClientRect();
+            anchor = el;
+            anchorFrac = rect.height > 0 ? Math.max(0, Math.min(0.99, (0 - rect.top) / rect.height)) : 0;
         }
 
-        function remember() {
-            var hit = firstElementOnPage();
-            anchor = hit ? hit.el : anchor;
+        function anchorY() {
+            if (!anchor || !anchor.getBoundingClientRect) return null;
+            var rect = anchor.getBoundingClientRect();
+            return rect.top + scrollTop() + anchorFrac * rect.height;
         }
 
         ik.go = function(page) {
-            var target = Math.max(0, Math.min(ik.count() - 1, page));
-            window.scrollTo(target * width(), 0);
-            remember();
+            ensure();
+            var target = Math.max(0, Math.min(stops.length - 1, page));
+            scrollToStop(target);
+            updateMask(target);
+            rememberPosition();
             report();
         };
         ik.next = function() {
@@ -145,10 +213,11 @@ internal val PAGED_RUNTIME_JS =
 
         // Token stored as reading progress: an XPath id() expression, or idx:<n> into body *.
         ik.anchorToken = function() {
-            var hit = firstElementOnPage();
-            if (!hit) return null;
-            if (hit.el.id) return 'id(' + JSON.stringify(hit.el.id) + ')';
-            return 'idx:' + hit.index;
+            var el = firstVisibleElement();
+            if (!el) return null;
+            if (el.id) return 'id(' + JSON.stringify(el.id) + ')';
+            var index = Array.prototype.indexOf.call(document.body.querySelectorAll('*'), el);
+            return index >= 0 ? 'idx:' + index : null;
         };
 
         function resolve(token) {
@@ -164,32 +233,51 @@ internal val PAGED_RUNTIME_JS =
             return document.getElementById(plain);
         }
 
-        function pageOfElement(el) {
-            var rects = el.getClientRects();
-            if (!rects.length) return null;
-            return pageOfX(rects[0].left + root().scrollLeft);
-        }
-
         ik.goToToken = function(token) {
             var el = resolve(token);
-            var page = el ? pageOfElement(el) : null;
-            if (page === null) return false;
+            if (!el || !el.getBoundingClientRect) return false;
+            ensure();
+            ik.go(pageForY(docTop(el)));
             anchor = el;
-            ik.go(page);
+            anchorFrac = 0;
             return true;
         };
 
-        // Call after anything that can change the layout (style change, fonts, images).
+        // Call after anything that can change the layout (style change, fonts, images, resize).
         ik.relayout = function() {
-            var el = anchor;
-            var page = el ? pageOfElement(el) : null;
-            window.scrollTo(Math.max(0, Math.min(ik.count() - 1, page === null ? ik.current() : page)) * width(), 0);
+            var y = anchorY();
+            build();
+            var page = y === null ? pageForY(scrollTop()) : pageForY(y);
+            var target = Math.max(0, Math.min(stops.length - 1, page));
+            scrollToStop(target);
+            updateMask(target);
             report();
         };
 
         function schedule() {
             if (timer) clearTimeout(timer);
-            timer = setTimeout(ik.relayout, 60);
+            timer = setTimeout(function() {
+                if (busy) { schedule(); return; }
+                ik.relayout();
+            }, 80);
+        }
+
+        // If something nudges the scroll position off a page boundary, put it back.
+        var healTimer = null;
+        function heal() {
+            if (busy || !items) return;
+            var y = scrollTop();
+            var best = 0;
+            var distance = Infinity;
+            for (var i = 0; i < stops.length; i++) {
+                var d = Math.abs(stops[i] - y);
+                if (d < distance) { distance = d; best = i; }
+            }
+            if (distance > 1.5 && distance < viewHeight() / 2) {
+                scrollToStop(best);
+                updateMask(best);
+                report();
+            }
         }
 
         ik.start = function() {
@@ -198,7 +286,18 @@ internal val PAGED_RUNTIME_JS =
                 if (!imgs[i].complete) imgs[i].addEventListener('load', schedule);
             }
             if (document.fonts && document.fonts.ready) document.fonts.ready.then(schedule);
+            if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', schedule);
+            window.addEventListener('load', schedule);
             window.addEventListener('resize', schedule);
+            if (window.ResizeObserver) {
+                var observer = new ResizeObserver(schedule);
+                observer.observe(document.body);
+                observer.observe(document.documentElement);
+            }
+            window.addEventListener('scroll', function() {
+                if (healTimer) clearTimeout(healTimer);
+                healTimer = setTimeout(heal, 200);
+            }, { passive: true });
             report();
         };
     })();

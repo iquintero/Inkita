@@ -1466,7 +1466,6 @@ internal fun ReaderWebView(
             padding-top: ${paddingTopPx}px !important;
             padding-bottom: ${paddingTopPx}px !important;
         }
-        ${if (paged) pagedCss(paddingPx) else ""}
         """.trimIndent()
     val styleJs =
         """
@@ -1598,7 +1597,8 @@ internal fun ReaderWebView(
                 }
                 setOnTouchListener { _, event ->
                     gestureDetector.onTouchEvent(event)
-                    false
+                    // Paged mode turns pages itself, so the WebView must not scroll under the finger.
+                    currentPaged
                 }
                 setOnScrollChangeListener { _, _, _, _, _ ->
                     scrollRunnable?.let { scrollHandler.removeCallbacks(it) }
