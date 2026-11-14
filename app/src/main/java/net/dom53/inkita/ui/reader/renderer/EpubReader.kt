@@ -68,6 +68,10 @@ object EpubReader : BaseReader {
             onPagedChanged = callbacks.onEpubPageChanged,
             insetTopPx = params.insetTopPx,
             insetBottomPx = params.insetBottomPx,
+            enterDirection = params.enterDirection,
+            onConsumeEnter = callbacks.onConsumeEnter,
+            hasPrevPage = params.hasPrevPage,
+            hasNextPage = params.hasNextPage,
         )
     }
 }

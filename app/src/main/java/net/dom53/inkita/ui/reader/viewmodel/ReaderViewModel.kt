@@ -103,6 +103,23 @@ abstract class BaseReaderViewModel(
         }
     }
 
+    private val prefetched = mutableMapOf<Int, ReaderLoadResult>()
+    private val prefetching = mutableSetOf<Int>()
+
+    /** Fetch a neighbouring EPUB page ahead of time so turning to it does not wait for the network. */
+    fun prefetchPage(index: Int) {
+        if (reader.format != Format.Epub || index < 0) return
+        if (prefetched.containsKey(index) || !prefetching.add(index)) return
+        viewModelScope.launch {
+            val result = runCatching { reader.loadPage(chapterId, index) }.getOrNull()
+            prefetching.remove(index)
+            if (result != null) {
+                prefetched.keys.retainAll { kotlin.math.abs(it - index) <= 1 }
+                prefetched[index] = result
+            }
+        }
+    }
+
     private var targetScrollId: String? = null
     private var targetOpenAtEnd = false
 
@@ -129,7 +146,7 @@ abstract class BaseReaderViewModel(
         viewModelScope.launch {
             val previous = _state.value
             _state.update { it.copy(isLoading = true, error = null) }
-            runCatching { reader.loadPage(chapterId, index) }
+            runCatching { prefetched.remove(index) ?: reader.loadPage(chapterId, index) }
                 .onSuccess { result ->
                     applyLoadResult(result, index)
                     // A new page must not inherit the previous page's scroll position.

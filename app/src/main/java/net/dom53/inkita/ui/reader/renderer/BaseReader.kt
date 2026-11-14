@@ -40,6 +40,9 @@ data class ReaderRenderParams(
     val openAtEnd: Boolean = false,
     val insetTopPx: Int = 0,
     val insetBottomPx: Int = 0,
+    val enterDirection: Int = 0,
+    val hasPrevPage: Boolean = false,
+    val hasNextPage: Boolean = false,
 )
 
 data class ReaderRenderCallbacks(
@@ -55,4 +58,5 @@ data class ReaderRenderCallbacks(
     val onPdfPageChanged: (Int, Int) -> Unit,
     val onEpubPageChanged: (Int, Int) -> Unit = { _, _ -> },
     val onConsumeOpenAtEnd: () -> Unit = {},
+    val onConsumeEnter: () -> Unit = {},
 )

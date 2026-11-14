@@ -28,6 +28,7 @@ internal val PAGED_RUNTIME_JS =
         var anchor = null;
         var anchorFrac = 0;
         var timer = null;
+        var busy = false;
 
         function viewHeight() { return Math.max(1, window.innerHeight); }
         function scrollTop() {
@@ -203,17 +204,74 @@ internal val PAGED_RUNTIME_JS =
             rememberPosition();
             report();
         };
-        ik.next = function() {
+        function shift(px, ms, ease, done) {
+            var body = document.body;
+            body.style.transition = ms ? 'transform ' + ms + 'ms ' + ease : 'none';
+            body.style.transform = px === 0 && !ms ? '' : 'translateX(' + px + 'px)';
+            if (done) setTimeout(done, ms + 30);
+        }
+
+        // Slide the current screen out, swap the content while it is off screen, slide the new one in.
+        function turn(direction, target) {
+            var width = Math.max(1, window.innerWidth);
+            busy = true;
+            shift(-direction * width, 110, 'ease-in', function() {
+                scrollToStop(target);
+                updateMask(target);
+                rememberPosition();
+                report();
+                shift(direction * width, 0);
+                void document.body.offsetWidth;
+                shift(0, 160, 'ease-out', function() {
+                    shift(0, 0);
+                    busy = false;
+                });
+            });
+        }
+
+        function move(direction) {
+            if (busy) return true;
             var cur = ik.current();
-            if (cur >= ik.count() - 1) return false;
-            ik.go(cur + 1);
+            var target = cur + direction;
+            // At the edge of this book page the caller decides what happens (slide to the neighbouring page, or settle).
+            if (target < 0 || target > ik.count() - 1) return false;
+            turn(direction, target);
             return true;
+        }
+        ik.next = function() { return move(1); };
+        ik.prev = function() { return move(-1); };
+
+        // Follow a finger: dx is the horizontal drag distance in CSS px.
+        // canPrev / canNext say whether another book page exists beyond this one; only without one does it resist.
+        ik.drag = function(dx, canPrev, canNext) {
+            if (busy) return;
+            var cur = ik.current();
+            var blocked = (dx > 0 && cur === 0 && !canPrev) || (dx < 0 && cur === ik.count() - 1 && !canNext);
+            shift(blocked ? dx * 0.25 : dx, 0);
         };
-        ik.prev = function() {
-            var cur = ik.current();
-            if (cur <= 0) return false;
-            ik.go(cur - 1);
-            return true;
+
+        // Slide this book page away while the next one is loaded; enter() then slides the new one in.
+        ik.leave = function(direction) {
+            busy = true;
+            shift(-direction * Math.max(1, window.innerWidth), 110, 'ease-in');
+        };
+        ik.enter = function(direction) {
+            busy = true;
+            shift(direction * Math.max(1, window.innerWidth), 0);
+            void document.body.offsetWidth;
+            shift(0, 170, 'ease-out', function() {
+                shift(0, 0);
+                busy = false;
+            });
+        };
+        // The next page never arrived: bring this one back.
+        ik.recover = function() {
+            busy = false;
+            shift(0, 150, 'ease-out', function() { shift(0, 0); });
+        };
+        ik.settle = function() {
+            if (busy) return;
+            shift(0, 150, 'ease-out', function() { shift(0, 0); });
         };
         ik.last = function() { ik.go(ik.count() - 1); };
 
@@ -287,6 +345,8 @@ internal val PAGED_RUNTIME_JS =
         }
 
         ik.start = function() {
+            // The slide animation briefly makes the page wider than the screen; never let that scroll.
+            document.documentElement.style.overflowX = 'hidden';
             var imgs = document.images;
             for (var i = 0; i < imgs.length; i++) {
                 if (!imgs[i].complete) imgs[i].addEventListener('load', schedule);
@@ -313,6 +373,7 @@ internal val PAGED_RUNTIME_JS =
 internal fun pagedStartJs(
     scrollToken: String?,
     atEnd: Boolean,
+    enterDirection: Int = 0,
 ): String {
     val token = scrollToken?.let { JSONObject.quote(it) } ?: "null"
     return """
@@ -320,8 +381,10 @@ internal fun pagedStartJs(
         (function() {
             var ik = window.__ik;
             ik.start();
-            if ($token !== null && ik.goToToken($token)) return;
-            if ($atEnd) ik.last(); else ik.go(0);
+            if (!($token !== null && ik.goToToken($token))) {
+                if ($atEnd) ik.last(); else ik.go(0);
+            }
+            if ($enterDirection !== 0) ik.enter($enterDirection);
         })();
         """.trimIndent()
 }
