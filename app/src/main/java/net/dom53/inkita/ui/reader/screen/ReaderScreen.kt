@@ -536,9 +536,18 @@ internal fun BaseReaderScreen(
 
         if (showOverlay) {
             val barTitle = uiState.bookInfo?.title ?: stringResource(R.string.reader_title)
-            val basePageText = pageText(uiState.pageIndex, uiState.pageCount, uiState.bookInfo?.pageTitle, context)
+            // Kavita's "pages" of an EPUB are the book's documents (normally one per chapter), so name them
+            // that way; the screen-sized pages of paged mode are the real pages.
+            val isEpub = renderer === net.dom53.inkita.ui.reader.renderer.EpubReader
+            val unitLabel = stringResource(if (isEpub) R.string.reader_chapter_label else R.string.general_page)
+            val basePageText =
+                pageText(uiState.pageIndex, uiState.pageCount, uiState.bookInfo?.pageTitle, unitLabel)
             val barPageText =
-                if (pagedEnabled && pagedTotal > 0) "$basePageText · ${pagedPage + 1}/$pagedTotal" else basePageText
+                if (pagedEnabled && pagedTotal > 0) {
+                    "$basePageText · ${stringResource(R.string.general_page)} ${pagedPage + 1}/$pagedTotal"
+                } else {
+                    basePageText
+                }
             if (topBarContent != null) {
                 topBarContent(barTitle, barPageText, leaveReader)
             } else {
@@ -1438,9 +1447,9 @@ private fun pageText(
     idx: Int,
     count: Int,
     pageTitle: String?,
-    context: Context,
+    unitLabel: String,
 ): String {
-    val base = if (count > 0) "${context.resources.getString(R.string.general_page)} ${idx + 1} / $count" else ""
+    val base = if (count > 0) "$unitLabel ${idx + 1} / $count" else ""
     return if (!pageTitle.isNullOrBlank()) {
         listOf(base, pageTitle).filter { it.isNotBlank() }.joinToString(" – ")
     } else {

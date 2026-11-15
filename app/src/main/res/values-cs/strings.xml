@@ -222,6 +222,7 @@
     <string name="reader_settings_image_section">Čtečka obrázků</string>
     <string name="reader_image_default_mode">Výchozí režim čtení</string>
     <string name="reader_pdf_reading_direction">Směr čtení PDF</string>
+    <string name="reader_chapter_label">Kapitola</string>
     <string name="reader_paged_mode">Čtení po stránkách</string>
     <string name="reader_paged_mode_subtitle">Listujte po stránkách o velikosti obrazovky jako v čtečce místo posouvání. Klepněte na okraj obrazovky nebo přejeďte prstem.</string>
     <string name="reader_contents">Obsah</string>
