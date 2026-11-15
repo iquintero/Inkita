@@ -29,6 +29,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -107,6 +108,27 @@ fun SettingsReaderScreen(
         )
 
         Text(stringResource(R.string.reader_settings_general_section), style = MaterialTheme.typography.titleMedium)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(stringResource(R.string.reader_keep_screen_on), style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    text = stringResource(R.string.reader_keep_screen_on_subtitle),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Switch(
+                checked = prefs.keepScreenOn,
+                onCheckedChange = { enabled ->
+                    scope.launch { appPreferences.updateReaderPrefs { copy(keepScreenOn = enabled) } }
+                },
+                modifier = Modifier.padding(start = 12.dp),
+            )
+        }
         HorizontalDivider()
 
         Text(stringResource(R.string.reader_settings_image_section), style = MaterialTheme.typography.titleMedium)

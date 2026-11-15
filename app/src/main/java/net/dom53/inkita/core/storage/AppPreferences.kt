@@ -54,6 +54,8 @@ data class ReaderPrefs(
     val imageReaderMode: ImageReaderMode = ImageReaderMode.LeftToRight,
     val imagePrefetchPages: Int = 8,
     val pdfRightToLeft: Boolean = false,
+    /** Keep the screen from dimming and locking while a book is open. */
+    val keepScreenOn: Boolean = false,
 ) {
     companion object {
         const val DEFAULT_FONT_FAMILY = "literata"
@@ -92,6 +94,7 @@ class AppPreferences(
         private val KEY_IMAGE_READER_MODE = stringPreferencesKey("image_reader_mode")
         private val KEY_IMAGE_PREFETCH_PAGES = intPreferencesKey("image_prefetch_pages")
         private val KEY_PDF_RIGHT_TO_LEFT = booleanPreferencesKey("pdf_right_to_left")
+        private val KEY_READER_KEEP_SCREEN_ON = booleanPreferencesKey("reader_keep_screen_on")
 
         private val KEY_APP_LANGUAGE = stringPreferencesKey("app_language")
         private val KEY_APP_THEME = stringPreferencesKey("app_theme")
@@ -200,6 +203,7 @@ class AppPreferences(
                 imageReaderMode = prefs.toImageReaderMode(),
                 imagePrefetchPages = prefs[KEY_IMAGE_PREFETCH_PAGES] ?: ReaderPrefs.DEFAULT_IMAGE_PREFETCH_PAGES,
                 pdfRightToLeft = prefs[KEY_PDF_RIGHT_TO_LEFT] ?: false,
+                keepScreenOn = prefs[KEY_READER_KEEP_SCREEN_ON] ?: false,
             )
         }
 
@@ -419,6 +423,7 @@ class AppPreferences(
                     imageReaderMode = prefs.toImageReaderMode(),
                     imagePrefetchPages = prefs[KEY_IMAGE_PREFETCH_PAGES] ?: ReaderPrefs.DEFAULT_IMAGE_PREFETCH_PAGES,
                     pdfRightToLeft = prefs[KEY_PDF_RIGHT_TO_LEFT] ?: false,
+                    keepScreenOn = prefs[KEY_READER_KEEP_SCREEN_ON] ?: false,
                 )
             val next = current.transform()
             prefs[KEY_FONT_SIZE] = next.fontSize
@@ -431,6 +436,7 @@ class AppPreferences(
             prefs[KEY_IMAGE_READER_MODE] = encodeImageReaderMode(next.imageReaderMode)
             prefs[KEY_IMAGE_PREFETCH_PAGES] = next.imagePrefetchPages.coerceAtLeast(0)
             prefs[KEY_PDF_RIGHT_TO_LEFT] = next.pdfRightToLeft
+            prefs[KEY_READER_KEEP_SCREEN_ON] = next.keepScreenOn
         }
     }
 

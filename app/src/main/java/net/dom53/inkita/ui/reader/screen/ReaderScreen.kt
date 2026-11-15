@@ -272,6 +272,13 @@ internal fun BaseReaderScreen(
         }
     }
 
+    // Keep the screen awake while the reader is open, so it doesn't dim mid-page and need a tap to wake.
+    val view = LocalView.current
+    DisposableEffect(view, readerPrefs.keepScreenOn) {
+        view.keepScreenOn = readerPrefs.keepScreenOn
+        onDispose { view.keepScreenOn = false }
+    }
+
     val goPrevPage: () -> Unit = goPrevPage@{
         if (uiState.pageIndex <= 0) {
             scope.launch {

@@ -4,6 +4,10 @@ All notable changes to this project will be documented here.
 
 ## Unreleased
 
+### Added
+
+- "Keep screen on" reader setting (Settings > Reader > General) that stops the screen from dimming or locking while a book is open. Off by default.
+
 ### Fixed
 
 - Fix a database migration that could prevent Inkita from opening after an upgrade from older versions such as v0.2.0-beta.2.
