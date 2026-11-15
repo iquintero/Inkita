@@ -8,6 +8,7 @@ All notable changes to this project will be documented here.
 
 - Optional page-by-page EPUB reading (Reader settings, Navigation tab, or Settings > Reader). Each book page is split into screen-sized pages that you turn by tapping the left or right edge of the screen or swiping, like an e-reader. Off by default; scrolling is unchanged.
 - Table of contents button in the EPUB reader to jump to any chapter or section, including its position inside the page.
+- "Keep screen on" reader setting (Settings > Reader > General) that stops the screen from dimming or locking while a book is open. Off by default.
 
 ### Fixed
 

@@ -277,6 +277,8 @@
     <string name="reader_mark_chapter_read_skip">Continue without marking</string>
     <string name="reader_font_selection">Select font</string>
     <string name="reader_settings_general_section">General</string>
+    <string name="reader_keep_screen_on">Keep screen on</string>
+    <string name="reader_keep_screen_on_subtitle">Stop the screen from dimming or locking while you read.</string>
     <string name="reader_settings_image_section">Image reader</string>
     <string name="reader_image_default_mode">Default reading mode</string>
     <string name="reader_pdf_reading_direction">PDF reading direction</string>

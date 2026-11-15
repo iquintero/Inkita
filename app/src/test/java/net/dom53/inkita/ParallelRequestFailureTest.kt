@@ -22,8 +22,7 @@ import java.util.concurrent.CopyOnWriteArrayList
  * Without a supervisor scope that reached the uncaught exception handler, i.e. the app crashed.
  */
 class ParallelRequestFailureTest {
-    private fun scopeRecordingCrashes(crashes: MutableList<Throwable>) =
-        CoroutineScope(SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { _, e -> crashes += e })
+    private fun scopeRecordingCrashes(crashes: MutableList<Throwable>) = CoroutineScope(SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { _, e -> crashes += e })
 
     private suspend fun failingRequest(): Nothing {
         delay(10)

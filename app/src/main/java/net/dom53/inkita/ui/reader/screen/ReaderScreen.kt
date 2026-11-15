@@ -182,6 +182,7 @@ fun ReaderScreen(
     }
 }
 
+@Suppress("CyclomaticComplexMethod")
 @Composable
 internal fun BaseReaderScreen(
     chapterId: Int,
@@ -298,6 +299,13 @@ internal fun BaseReaderScreen(
             window?.let { WindowCompat.setDecorFitsSystemWindows(it, true) }
             controller?.show(WindowInsetsCompat.Type.systemBars())
         }
+    }
+
+    // Keep the screen awake while the reader is open, so it doesn't dim mid-page and need a tap to wake.
+    val view = LocalView.current
+    DisposableEffect(view, readerPrefs.keepScreenOn) {
+        view.keepScreenOn = readerPrefs.keepScreenOn
+        onDispose { view.keepScreenOn = false }
     }
 
     val goPrevPageWith: (Boolean) -> Unit = goPrevPage@{ openAtEnd ->
@@ -1447,6 +1455,7 @@ private const val PAGED_LOAD_TIMEOUT_MS = 3000L
 private const val PAGED_ENTER_FALLBACK_MS = 3000L
 private const val PAGED_ANCHOR_JS = "(window.__ik ? window.__ik.anchorToken() : null);"
 
+@Suppress("LongParameterList")
 @Composable
 internal fun ReaderWebView(
     html: String,

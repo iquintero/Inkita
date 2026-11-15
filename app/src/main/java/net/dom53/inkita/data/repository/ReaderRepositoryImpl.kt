@@ -488,7 +488,11 @@ class ReaderRepositoryImpl(
                     ReaderTocItem(
                         title = title,
                         page = item.page ?: 0,
-                        anchor = item.part?.trim()?.removePrefix("#")?.takeIf { it.isNotEmpty() },
+                        anchor =
+                            item.part
+                                ?.trim()
+                                ?.removePrefix("#")
+                                ?.takeIf { it.isNotEmpty() },
                         depth = depth,
                     ),
                 )
