@@ -741,8 +741,7 @@ internal fun buildPageTitleMap(
 }
 
 internal fun volumeNumberText(volume: net.dom53.inkita.data.api.dto.VolumeDto): String? {
-    val volNumber = volume.minNumber ?: volume.maxNumber
-    if (volNumber == null) return null
+    val volNumber = (volume.minNumber ?: volume.maxNumber)?.takeIf { it >= 0f } ?: return null
     return if (volNumber % 1f == 0f) volNumber.toInt().toString() else volNumber.toString()
 }
 
@@ -769,9 +768,12 @@ internal fun chapterPositionText(
             detail?.volumes.orEmpty().forEach { addAll(it.chapters.orEmpty()) }
         }.firstOrNull { it.id == chapterId }
             ?: fallbackChapter
-    return matchingChapter.number?.takeIf { it.isNotBlank() }
-        ?: matchingChapter.range?.takeIf { it.isNotBlank() }
-        ?: (matchingChapter.minNumber ?: matchingChapter.maxNumber)?.let { number ->
+
+    // Kavita marks "no number" (loose leaf, most EPUBs) with a large negative value such as -100000.
+    fun String.isRealNumber() = isNotBlank() && toFloatOrNull()?.let { it >= 0f } != false
+    return matchingChapter.number?.takeIf { it.isRealNumber() }
+        ?: matchingChapter.range?.takeIf { it.isRealNumber() }
+        ?: (matchingChapter.minNumber ?: matchingChapter.maxNumber)?.takeIf { it >= 0f }?.let { number ->
             if (number % 1f == 0f) number.toInt().toString() else number.toString()
         }
 }

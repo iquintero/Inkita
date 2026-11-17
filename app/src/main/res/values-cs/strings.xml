@@ -494,6 +494,7 @@
     <string name="series_detail_vol_short">Sv. %1$s</string>
     <string name="series_detail_vol_short_plain">Sv.</string>
     <string name="browse_filter_applied_genre">Filtrováno podle žánru: %1$s</string>
+    <string name="series_detail_continue_epub_chapter">Pokračovat kap. %1$d</string>
     <string name="series_detail_continue_ch">Pokračovat: s. %1$d</string>
     <string name="series_detail_continue_ch_page">Pokračovat kap. %1$s str. %2$d</string>
     <string name="series_detail_start_reading">Začít číst</string>

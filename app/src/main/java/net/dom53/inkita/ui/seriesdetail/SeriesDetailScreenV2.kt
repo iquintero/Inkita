@@ -632,7 +632,13 @@ fun SeriesDetailScreenV2(
                             val continuePoint = detail?.continuePoint
                             val readerProgress = detail?.readerProgress
                             val continueLabel =
-                                if (continuePoint != null && detail?.hasProgress == true) {
+                                if (continuePoint != null && detail?.hasProgress == true && Format.fromId(detail?.series?.format) == Format.Epub) {
+                                    // In EPUBs a "page" is a chapter (spine document), as in the reader header.
+                                    stringResource(
+                                        id = net.dom53.inkita.R.string.series_detail_continue_epub_chapter,
+                                        (continuePoint.pagesRead ?: 0) + 1,
+                                    )
+                                } else if (continuePoint != null && detail?.hasProgress == true) {
                                     val page = (continuePoint.pagesRead ?: 0) + 1
                                     val volId = readerProgress?.volumeId ?: continuePoint.volumeId
                                     val chapterId = readerProgress?.chapterId ?: continuePoint.id

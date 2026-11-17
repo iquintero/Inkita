@@ -105,6 +105,7 @@
     <string name="series_detail_vol_short">Vol. %1$s</string>
     <string name="series_detail_vol_short_plain">Vol.</string>
     <string name="series_detail_continue_vol_ch">Continue Vol. %1$s Pg. %2$d</string>
+    <string name="series_detail_continue_epub_chapter">Continue Ch. %1$d</string>
     <string name="series_detail_continue_ch">Continue Pg. %1$d</string>
     <string name="series_detail_continue_vol_ch_page">Continue Vol. %1$s Ch. %2$s Pg. %3$d</string>
     <string name="series_detail_continue_ch_page">Continue Ch. %1$s Pg. %2$d</string>
