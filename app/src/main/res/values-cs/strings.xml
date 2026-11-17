@@ -223,6 +223,13 @@
     <string name="reader_image_default_mode">Výchozí režim čtení</string>
     <string name="reader_pdf_reading_direction">Směr čtení PDF</string>
     <string name="reader_chapter_label">Kapitola</string>
+    <string name="reader_selection_define">Definice</string>
+    <string name="dictionary_loading">Vyhledávám…</string>
+    <string name="dictionary_not_found">Pro toto slovo nebyla nalezena žádná definice.</string>
+    <string name="dictionary_failed">Slovník není dostupný. Zkontrolujte připojení a zkuste to znovu.</string>
+    <string name="dictionary_search_web">Hledat na webu</string>
+    <string name="dictionary_open_wiktionary">Otevřít ve Wikislovníku</string>
+    <string name="dictionary_source">Definice z Wikislovníku (Wiktionary, CC BY-SA). Vybrané slovo se odesílá na wiktionary.org.</string>
     <string name="reader_paged_mode">Čtení po stránkách</string>
     <string name="reader_paged_mode_subtitle">Listujte po stránkách o velikosti obrazovky jako v čtečce místo posouvání. Klepněte na okraj obrazovky nebo přejeďte prstem.</string>
     <string name="reader_contents">Obsah</string>

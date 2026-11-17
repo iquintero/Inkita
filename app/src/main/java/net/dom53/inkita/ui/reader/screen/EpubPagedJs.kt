@@ -346,7 +346,9 @@ internal val PAGED_RUNTIME_JS =
 
         ik.start = function() {
             // The slide animation briefly makes the page wider than the screen; never let that scroll.
-            document.documentElement.style.overflowX = 'hidden';
+            // Touch scrolling is off entirely: pages are turned by script (window.scrollTo still works), and
+            // this lets touches reach the WebView so text can be selected.
+            document.documentElement.style.overflow = 'hidden';
             var imgs = document.images;
             for (var i = 0; i < imgs.length; i++) {
                 if (!imgs[i].complete) imgs[i].addEventListener('load', schedule);

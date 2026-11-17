@@ -293,6 +293,13 @@
     <string name="reader_image_prefetch_pages_value">%1$d pages</string>
     <string name="reader_text_settings">Text settings</string>
     <string name="reader_chapter_label">Chapter</string>
+    <string name="reader_selection_define">Define</string>
+    <string name="dictionary_loading">Looking up…</string>
+    <string name="dictionary_not_found">No definition found for this word.</string>
+    <string name="dictionary_failed">Could not reach the dictionary. Check your connection and try again.</string>
+    <string name="dictionary_search_web">Search the web</string>
+    <string name="dictionary_open_wiktionary">Open in Wiktionary</string>
+    <string name="dictionary_source">Definitions from Wiktionary (CC BY-SA). The selected word is sent to wiktionary.org.</string>
     <string name="reader_paged_mode">Page-by-page reading</string>
     <string name="reader_paged_mode_subtitle">Turn screen-sized pages like an e-reader instead of scrolling. Tap the screen edges or swipe.</string>
     <string name="reader_contents">Contents</string>

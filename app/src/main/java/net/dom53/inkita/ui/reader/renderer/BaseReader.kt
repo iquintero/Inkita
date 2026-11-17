@@ -59,4 +59,6 @@ data class ReaderRenderCallbacks(
     val onEpubPageChanged: (Int, Int) -> Unit = { _, _ -> },
     val onConsumeOpenAtEnd: () -> Unit = {},
     val onConsumeEnter: () -> Unit = {},
+    /** A word or phrase was selected in the EPUB and "Define" was chosen: (text, book language). */
+    val onLookupWord: (String, String?) -> Unit = { _, _ -> },
 )

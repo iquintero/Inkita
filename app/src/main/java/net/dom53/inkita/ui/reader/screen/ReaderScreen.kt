@@ -251,6 +251,7 @@ internal fun BaseReaderScreen(
     var showOverlay by remember { mutableStateOf(true) }
     var showSettingsPanel by remember { mutableStateOf(false) }
     var showToc by remember { mutableStateOf(false) }
+    var lookup by remember { mutableStateOf<LookupRequest?>(null) }
     // Last measured overlay bar heights; kept while the bars are hidden so paged layout stays stable.
     var topBarPx by remember { mutableStateOf(0) }
     var bottomBarPx by remember { mutableStateOf(0) }
@@ -531,6 +532,7 @@ internal fun BaseReaderScreen(
                     },
                     onConsumeEnter = { enterDirection = 0 },
                     onConsumeOpenAtEnd = { readerViewModel.consumeOpenAtEnd() },
+                    onLookupWord = { text, language -> lookup = LookupRequest(text, language) },
                 ),
         )
 
@@ -825,6 +827,8 @@ internal fun BaseReaderScreen(
 
             overlayExtras()
         }
+
+        lookup?.let { request -> DefinitionSheet(request = request, onDismiss = { lookup = null }) }
 
         if (showToc) {
             TocDialog(
@@ -1496,6 +1500,7 @@ internal fun ReaderWebView(
     onConsumeEnter: () -> Unit = {},
     hasPrevPage: Boolean = false,
     hasNextPage: Boolean = false,
+    onLookupWord: (String, String?) -> Unit = { _, _ -> },
 ) {
     if (html.isBlank()) return
     val context = LocalContext.current
@@ -1519,6 +1524,7 @@ internal fun ReaderWebView(
     val currentHasNext by rememberUpdatedState(hasNextPage)
     val currentSwipeNext by rememberUpdatedState(onSwipeNext)
     val currentSwipePrev by rememberUpdatedState(onSwipePrev)
+    val currentLookup by rememberUpdatedState(onLookupWord)
     val paddingTopPx = paddingPx / 2f
     val fontFaceCss = fontOption.fontFaceCss().replace("file:///android_asset/fonts/", READER_FONT_URL)
     val (bgColor, textColor) = themeColorsFor(themeMode)
@@ -1635,6 +1641,9 @@ internal fun ReaderWebView(
                 var tappedView: WebView? = null
                 var dragging = false
                 var flung = false
+                // A tap that only dismisses a text selection, or a long press that starts one, is not a page gesture.
+                var selectingAtDown = false
+                var longPressed = false
                 var dragDx = 0f
                 val density = context.resources.displayMetrics.density
                 val touchSlop = ViewConfiguration.get(context).scaledTouchSlop
@@ -1642,7 +1651,12 @@ internal fun ReaderWebView(
                     GestureDetector(
                         context,
                         object : GestureDetector.SimpleOnGestureListener() {
+                            override fun onLongPress(e: MotionEvent) {
+                                longPressed = true
+                            }
+
                             override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
+                                if (selectingAtDown) return true
                                 val width = tappedView?.width ?: 0
                                 if (currentPaged && width > 0) {
                                     when {
@@ -1662,7 +1676,7 @@ internal fun ReaderWebView(
                                 velocityX: Float,
                                 velocityY: Float,
                             ): Boolean {
-                                if (e1 == null) return false
+                                if (e1 == null || selectingAtDown || longPressed) return false
                                 val diffX = e2.x - e1.x
                                 val diffY = e2.y - e1.y
                                 if (abs(diffX) > abs(diffY) &&
@@ -1682,7 +1696,7 @@ internal fun ReaderWebView(
                                 distanceX: Float,
                                 distanceY: Float,
                             ): Boolean {
-                                if (!currentPaged || e1 == null) return false
+                                if (!currentPaged || e1 == null || selectingAtDown || longPressed) return false
                                 val totalX = e2.x - e1.x
                                 val totalY = e2.y - e1.y
                                 if (!dragging && abs(totalX) > touchSlop * 2 && abs(totalX) > abs(totalY)) dragging = true
@@ -1693,8 +1707,9 @@ internal fun ReaderWebView(
                             }
                         },
                     )
-                WebView(context).apply {
+                SelectionWebView(context).apply {
                     tappedView = this
+                    onDefine = { text, language -> currentLookup(text, language) }
                     addJavascriptInterface(
                         object {
                             @JavascriptInterface
@@ -1733,6 +1748,10 @@ internal fun ReaderWebView(
                         }
                     }
                     setOnTouchListener { view, event ->
+                        if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+                            selectingAtDown = (view as? SelectionWebView)?.isSelecting == true
+                            longPressed = false
+                        }
                         gestureDetector.onTouchEvent(event)
                         val ended = event.actionMasked == MotionEvent.ACTION_UP || event.actionMasked == MotionEvent.ACTION_CANCEL
                         if (currentPaged && ended) {
@@ -1747,8 +1766,9 @@ internal fun ReaderWebView(
                             flung = false
                             dragDx = 0f
                         }
-                        // Paged mode turns pages itself, so the WebView must not scroll under the finger.
-                        currentPaged
+                        // Always let the WebView see the touches so text can be selected. Paged mode's page is not
+                        // scrollable by touch (see ik.start), so it will not move under the finger.
+                        false
                     }
                     setOnScrollChangeListener { _, _, _, _, _ ->
                         scrollRunnable?.let { scrollHandler.removeCallbacks(it) }

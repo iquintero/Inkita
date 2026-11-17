@@ -70,6 +70,7 @@ object EpubReader : BaseReader {
             insetBottomPx = params.insetBottomPx,
             enterDirection = params.enterDirection,
             onConsumeEnter = callbacks.onConsumeEnter,
+            onLookupWord = callbacks.onLookupWord,
             hasPrevPage = params.hasPrevPage,
             hasNextPage = params.hasNextPage,
         )
