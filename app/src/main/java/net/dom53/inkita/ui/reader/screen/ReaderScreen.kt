@@ -10,6 +10,7 @@ import android.os.Looper
 import android.os.ParcelFileDescriptor
 import android.view.GestureDetector
 import android.view.MotionEvent
+import android.view.View
 import android.view.ViewConfiguration
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
@@ -92,12 +93,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import net.dom53.inkita.R
 import net.dom53.inkita.core.network.NetworkMonitor
 import net.dom53.inkita.core.network.NetworkUtils
@@ -124,6 +128,7 @@ import net.dom53.inkita.ui.reader.viewmodel.PdfReaderViewModel
 import net.dom53.inkita.ui.reader.viewmodel.ReaderUiState
 import java.io.File
 import java.util.Locale
+import kotlin.coroutines.resume
 import kotlin.math.abs
 import kotlin.math.max
 
@@ -209,7 +214,8 @@ internal fun BaseReaderScreen(
     val scope = rememberCoroutineScope()
     var isLeavingReader by remember { mutableStateOf(false) }
 
-    val hostWindow = (LocalView.current.context as? Activity)?.window
+    val hostView = LocalView.current
+    val hostWindow = (hostView.context as? Activity)?.window
     val leaveReader: () -> Unit = {
         if (!isLeavingReader) {
             isLeavingReader = true
@@ -217,13 +223,19 @@ internal fun BaseReaderScreen(
                 // Bringing the system bars back resizes the window and would visibly shift the page while the
                 // screen transitions away. Cover the page first, then restore them before navigating.
                 withFrameNanos { }
+                // Record where the reader is before the bars come back: that resizes the page, and the paged-mode
+                // script then re-flows the text and can land on an earlier page.
+                runCatching { readerViewModel.saveCurrentProgress() }
+                val latestState = readerViewModel.state.value
+                val barsWereHidden =
+                    ViewCompat.getRootWindowInsets(hostView)?.isVisible(WindowInsetsCompat.Type.statusBars()) == false
                 hostWindow?.let { window ->
                     WindowCompat.setDecorFitsSystemWindows(window, true)
                     WindowInsetsControllerCompat(window, window.decorView).show(WindowInsetsCompat.Type.systemBars())
                 }
+                // The screen we return to is padded by the bars, so let them finish sliding in before it appears.
+                if (barsWereHidden) awaitInsetsAnimationEnd(hostView)
                 withFrameNanos { }
-                runCatching { readerViewModel.saveCurrentProgress() }
-                val latestState = readerViewModel.state.value
                 onBack(
                     latestState.activeChapterId ?: chapterId,
                     latestState.pageIndex,
@@ -527,7 +539,10 @@ internal fun BaseReaderScreen(
                     onConsumePendingScroll = { pendingScrollY = null },
                     onConsumeScrollId = { pendingScrollId = null },
                     onWebViewReady = { webViewRef.value = it },
-                    onScrollIdle = { scrollId -> readerViewModel.markProgressAtCurrentPage(scrollId) },
+                    onScrollIdle = { scrollId ->
+                        // Ignore the re-flow caused by the system bars returning while the reader is being left.
+                        if (!isLeavingReader) readerViewModel.markProgressAtCurrentPage(scrollId)
+                    },
                     onPdfPageChanged = { idx, count ->
                         (readerViewModel as? PdfReaderViewModel)?.setPdfPageIndex(idx, count)
                     },
@@ -1481,6 +1496,31 @@ private fun pageText(
 }
 
 private const val PAGED_TAP_ZONE = 0.3f
+
+/** Suspends until the running system-bar animation on [view] ends, or [INSETS_SETTLE_TIMEOUT_MS] passes. */
+private suspend fun awaitInsetsAnimationEnd(view: View) {
+    withTimeoutOrNull(INSETS_SETTLE_TIMEOUT_MS) {
+        suspendCancellableCoroutine { continuation ->
+            ViewCompat.setWindowInsetsAnimationCallback(
+                view,
+                object : WindowInsetsAnimationCompat.Callback(DISPATCH_MODE_CONTINUE_ON_SUBTREE) {
+                    override fun onProgress(
+                        insets: WindowInsetsCompat,
+                        runningAnimations: List<WindowInsetsAnimationCompat>,
+                    ) = insets
+
+                    override fun onEnd(animation: WindowInsetsAnimationCompat) {
+                        if (continuation.isActive) continuation.resume(Unit)
+                    }
+                },
+            )
+            continuation.invokeOnCancellation { ViewCompat.setWindowInsetsAnimationCallback(view, null) }
+        }
+    }
+    ViewCompat.setWindowInsetsAnimationCallback(view, null)
+}
+
+private const val INSETS_SETTLE_TIMEOUT_MS = 600L
 
 /** Touches this close to a screen edge are left to the system back gesture. */
 private const val MIN_GESTURE_EDGE_DP = 24
