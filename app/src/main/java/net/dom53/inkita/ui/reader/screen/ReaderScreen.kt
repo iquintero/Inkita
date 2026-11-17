@@ -69,6 +69,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
@@ -89,6 +90,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -207,10 +209,19 @@ internal fun BaseReaderScreen(
     val scope = rememberCoroutineScope()
     var isLeavingReader by remember { mutableStateOf(false) }
 
+    val hostWindow = (LocalView.current.context as? Activity)?.window
     val leaveReader: () -> Unit = {
         if (!isLeavingReader) {
             isLeavingReader = true
             scope.launch {
+                // Bringing the system bars back resizes the window and would visibly shift the page while the
+                // screen transitions away. Cover the page first, then restore them before navigating.
+                withFrameNanos { }
+                hostWindow?.let { window ->
+                    WindowCompat.setDecorFitsSystemWindows(window, true)
+                    WindowInsetsControllerCompat(window, window.decorView).show(WindowInsetsCompat.Type.systemBars())
+                }
+                withFrameNanos { }
                 runCatching { readerViewModel.saveCurrentProgress() }
                 val latestState = readerViewModel.state.value
                 onBack(
@@ -536,7 +547,15 @@ internal fun BaseReaderScreen(
                 ),
         )
 
-        if (showOverlay) {
+        if (isLeavingReader) {
+            val (coverColor, _) = themeColorsFor(themeMode)
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(runCatching { Color(android.graphics.Color.parseColor(coverColor)) }.getOrDefault(Color.Black)),
+            )
+        }
+        if (showOverlay && !isLeavingReader) {
             val barTitle = uiState.bookInfo?.title ?: stringResource(R.string.reader_title)
             // Kavita's "pages" of an EPUB are the book's documents (normally one per chapter), so name them
             // that way; the screen-sized pages of paged mode are the real pages.
@@ -1462,6 +1481,9 @@ private fun pageText(
 }
 
 private const val PAGED_TAP_ZONE = 0.3f
+
+/** Touches this close to a screen edge are left to the system back gesture. */
+private const val MIN_GESTURE_EDGE_DP = 24
 private const val PAGED_DRAG_COMMIT = 0.25f
 private const val PAGED_LEAVE_MS = 120L
 private const val PAGED_LOAD_TIMEOUT_MS = 3000L
@@ -1641,7 +1663,8 @@ internal fun ReaderWebView(
                 var tappedView: WebView? = null
                 var dragging = false
                 var flung = false
-                // A tap that only dismisses a text selection, or a long press that starts one, is not a page gesture.
+                // A tap that only dismisses a text selection, a long press that starts one, or a touch that starts in the
+                // system back-gesture edge is not a page gesture.
                 var selectingAtDown = false
                 var longPressed = false
                 var dragDx = 0f
@@ -1749,7 +1772,16 @@ internal fun ReaderWebView(
                     }
                     setOnTouchListener { view, event ->
                         if (event.actionMasked == MotionEvent.ACTION_DOWN) {
-                            selectingAtDown = (view as? SelectionWebView)?.isSelecting == true
+                            val gestureEdge =
+                                maxOf(
+                                    ViewCompat
+                                        .getRootWindowInsets(view)
+                                        ?.getInsets(WindowInsetsCompat.Type.systemGestures())
+                                        ?.let { maxOf(it.left, it.right) } ?: 0,
+                                    (MIN_GESTURE_EDGE_DP * density).toInt(),
+                                )
+                            val inGestureEdge = event.x < gestureEdge || event.x > view.width - gestureEdge
+                            selectingAtDown = (view as? SelectionWebView)?.isSelecting == true || inGestureEdge
                             longPressed = false
                         }
                         gestureDetector.onTouchEvent(event)
