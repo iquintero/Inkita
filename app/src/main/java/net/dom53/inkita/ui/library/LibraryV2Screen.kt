@@ -39,6 +39,7 @@ import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Text
@@ -59,6 +60,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
@@ -540,6 +542,10 @@ private fun SeriesCard(
                         ),
                 contentScale = ContentScale.Crop,
             )
+            CoverProgressBar(
+                progress = item.progress,
+                modifier = Modifier.align(Alignment.BottomCenter),
+            )
             if (showDownloadBadges) {
                 DownloadStateBadge(
                     state = downloadState,
@@ -558,6 +564,29 @@ private fun SeriesCard(
             overflow = TextOverflow.Ellipsis,
         )
     }
+}
+
+/** A thin bar along the bottom of a cover for books that are started but not finished. */
+@Composable
+private fun CoverProgressBar(
+    progress: Float?,
+    modifier: Modifier = Modifier,
+) {
+    if (progress == null || progress <= 0f || progress >= 1f) return
+    LinearProgressIndicator(
+        progress = { progress },
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .height(4.dp)
+                .clip(
+                    androidx.compose.foundation.shape
+                        .RoundedCornerShape(bottomStart = 8.dp, bottomEnd = 8.dp),
+                ),
+        trackColor = Color.Black.copy(alpha = 0.45f),
+        gapSize = 0.dp,
+        drawStopIndicator = {},
+    )
 }
 
 @Composable
@@ -658,6 +687,10 @@ private fun WantToReadCard(
                                 .RoundedCornerShape(8.dp),
                         ),
                 contentScale = ContentScale.Crop,
+            )
+            CoverProgressBar(
+                progress = seriesProgress(series.pagesRead, series.pages),
+                modifier = Modifier.align(Alignment.BottomCenter),
             )
             if (showDownloadBadges) {
                 DownloadStateBadge(

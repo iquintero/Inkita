@@ -368,7 +368,17 @@ class LibraryV2ViewModel(
         return HomeSectionResult(series.toHomeItems(), failed = false)
     }
 
-    private fun List<Series>.toHomeItems(): List<HomeSeriesItem> = map { series -> HomeSeriesItem(series.id, series.name.ifBlank { "Series ${series.id}" }, series.localThumbPath) }
+    private fun List<Series>.toHomeItems(): List<HomeSeriesItem> =
+        map { series ->
+            HomeSeriesItem(
+                series.id,
+                series.name.ifBlank {
+                    "Series ${series.id}"
+                },
+                series.localThumbPath,
+                seriesProgress(series.pagesRead, series.pages),
+            )
+        }
 
     private data class HomeSectionResult(
         val items: List<HomeSeriesItem>,

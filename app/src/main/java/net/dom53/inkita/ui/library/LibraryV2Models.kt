@@ -10,7 +10,18 @@ data class HomeSeriesItem(
     val id: Int,
     val title: String,
     val localThumbPath: String? = null,
+    /** Fraction read (0..1), or null when unknown. */
+    val progress: Float? = null,
 )
+
+/** Fraction of a series that has been read, or null when the server didn't report page counts. */
+fun seriesProgress(
+    pagesRead: Int?,
+    pages: Int?,
+): Float? {
+    val total = pages?.takeIf { it > 0 } ?: return null
+    return ((pagesRead ?: 0).toFloat() / total).coerceIn(0f, 1f)
+}
 
 enum class LibraryV2Section {
     Home,
