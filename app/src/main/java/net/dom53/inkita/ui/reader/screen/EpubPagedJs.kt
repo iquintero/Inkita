@@ -213,6 +213,13 @@ internal val PAGED_RUNTIME_JS =
 
         // Slide the current screen out, swap the content while it is off screen, slide the new one in.
         function turn(direction, target) {
+            if (!ik.animate) {
+                scrollToStop(target);
+                updateMask(target);
+                rememberPosition();
+                report();
+                return;
+            }
             var width = Math.max(1, window.innerWidth);
             busy = true;
             shift(-direction * width, 110, 'ease-in', function() {
@@ -244,7 +251,7 @@ internal val PAGED_RUNTIME_JS =
         // Follow a finger: dx is the horizontal drag distance in CSS px.
         // canPrev / canNext say whether another book page exists beyond this one; only without one does it resist.
         ik.drag = function(dx, canPrev, canNext) {
-            if (busy) return;
+            if (busy || !ik.animate) return;
             var cur = ik.current();
             var blocked = (dx > 0 && cur === 0 && !canPrev) || (dx < 0 && cur === ik.count() - 1 && !canNext);
             shift(blocked ? dx * 0.25 : dx, 0);
@@ -252,10 +259,12 @@ internal val PAGED_RUNTIME_JS =
 
         // Slide this book page away while the next one is loaded; enter() then slides the new one in.
         ik.leave = function(direction) {
+            if (!ik.animate) return;
             busy = true;
             shift(-direction * Math.max(1, window.innerWidth), 110, 'ease-in');
         };
         ik.enter = function(direction) {
+            if (!ik.animate) return;
             busy = true;
             shift(direction * Math.max(1, window.innerWidth), 0);
             void document.body.offsetWidth;
@@ -270,7 +279,7 @@ internal val PAGED_RUNTIME_JS =
             shift(0, 150, 'ease-out', function() { shift(0, 0); });
         };
         ik.settle = function() {
-            if (busy) return;
+            if (busy || !ik.animate) return;
             shift(0, 150, 'ease-out', function() { shift(0, 0); });
         };
         ik.last = function() { ik.go(ik.count() - 1); };
@@ -376,12 +385,14 @@ internal fun pagedStartJs(
     scrollToken: String?,
     atEnd: Boolean,
     enterDirection: Int = 0,
+    animate: Boolean = true,
 ): String {
     val token = scrollToken?.let { JSONObject.quote(it) } ?: "null"
     return """
         $PAGED_RUNTIME_JS
         (function() {
             var ik = window.__ik;
+            ik.animate = $animate;
             ik.start();
             if (!($token !== null && ik.goToToken($token))) {
                 if ($atEnd) ik.last(); else ik.go(0);

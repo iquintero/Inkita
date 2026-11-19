@@ -505,6 +505,7 @@ internal fun BaseReaderScreen(
                     imagePrefetchPages = readerPrefs.imagePrefetchPages,
                     pdfRightToLeft = readerPrefs.pdfRightToLeft,
                     epubPaged = pagedEnabled,
+                    pageAnimations = !readerPrefs.einkMode,
                     openAtEnd = uiState.openAtEnd,
                     insetTopPx = topBarPx,
                     insetBottomPx = bottomBarPx,
@@ -1553,6 +1554,7 @@ internal fun ReaderWebView(
     onConsumeScrollId: () -> Unit = {},
     onScrollIdle: (String?) -> Unit = {},
     paged: Boolean = false,
+    animatePages: Boolean = true,
     openAtEnd: Boolean = false,
     onConsumeOpenAtEnd: () -> Unit = {},
     onPagedChanged: (Int, Int) -> Unit = { _, _ -> },
@@ -1577,6 +1579,7 @@ internal fun ReaderWebView(
     val currentScrollId by rememberUpdatedState(pendingScrollId)
     val consumeScrollId by rememberUpdatedState(onConsumeScrollId)
     val currentPaged by rememberUpdatedState(paged)
+    val currentAnimatePages by rememberUpdatedState(animatePages)
     val currentOpenAtEnd by rememberUpdatedState(openAtEnd)
     val consumeOpenAtEnd by rememberUpdatedState(onConsumeOpenAtEnd)
     val currentOnPagedChanged by rememberUpdatedState(onPagedChanged)
@@ -1765,7 +1768,12 @@ internal fun ReaderWebView(
                                 if (!dragging && abs(totalX) > touchSlop * 2 && abs(totalX) > abs(totalY)) dragging = true
                                 if (!dragging) return false
                                 dragDx = totalX
-                                tappedView?.evaluateJavascript("(window.__ik && window.__ik.drag(${totalX / density}, $currentHasPrev, $currentHasNext));", null)
+                                if (currentAnimatePages) {
+                                    tappedView?.evaluateJavascript(
+                                        "(window.__ik && window.__ik.drag(${totalX / density}, $currentHasPrev, $currentHasNext));",
+                                        null,
+                                    )
+                                }
                                 return true
                             }
                         },
@@ -1790,7 +1798,7 @@ internal fun ReaderWebView(
                         if (currentPaged) {
                             // The view was hidden while loading so the new page can slide in without a flash.
                             val enter = currentEnter
-                            view.evaluateJavascript(pagedStartJs(currentScrollId, currentOpenAtEnd, enter)) { view.alpha = 1f }
+                            view.evaluateJavascript(pagedStartJs(currentScrollId, currentOpenAtEnd, enter, currentAnimatePages)) { view.alpha = 1f }
                             consumeEnter()
                             consumeScrollId()
                             consumeOpenAtEnd()

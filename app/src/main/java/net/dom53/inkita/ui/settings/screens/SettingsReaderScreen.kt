@@ -129,6 +129,27 @@ fun SettingsReaderScreen(
                 modifier = Modifier.padding(start = 12.dp),
             )
         }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(stringResource(R.string.reader_eink_mode), style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    text = stringResource(R.string.reader_eink_mode_subtitle),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Switch(
+                checked = prefs.einkMode,
+                onCheckedChange = { enabled ->
+                    scope.launch { appPreferences.updateReaderPrefs { copy(einkMode = enabled) } }
+                },
+                modifier = Modifier.padding(start = 12.dp),
+            )
+        }
         HorizontalDivider()
 
         Text(stringResource(R.string.reader_settings_image_section), style = MaterialTheme.typography.titleMedium)

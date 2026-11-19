@@ -12,6 +12,11 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -71,6 +76,7 @@ import net.dom53.inkita.core.startup.StartupManager
 import net.dom53.inkita.core.storage.AppConfig
 import net.dom53.inkita.core.storage.AppPreferences
 import net.dom53.inkita.core.storage.AppTheme
+import net.dom53.inkita.core.storage.ReaderPrefs
 import net.dom53.inkita.data.repository.ComicPageFallback
 import net.dom53.inkita.domain.repository.AuthRepository
 import net.dom53.inkita.domain.repository.CollectionsRepository
@@ -202,6 +208,8 @@ private fun InfoSection(
     }
 }
 
+private const val SCREEN_FADE_MS = 700
+
 @Suppress("UnusedPrivateProperty")
 @Composable
 fun InkitaApp(
@@ -216,6 +224,9 @@ fun InkitaApp(
     readerRepository: net.dom53.inkita.domain.repository.ReaderRepository,
     cacheManager: CacheManager,
 ) {
+    val einkMode by appPreferences.readerPrefsFlow.collectAsState(initial = ReaderPrefs()).let { state ->
+        androidx.compose.runtime.derivedStateOf { state.value.einkMode }
+    }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val notifPromptShown by appPreferences.notificationsPromptShownFlow.collectAsState(initial = false)
@@ -433,6 +444,11 @@ fun InkitaApp(
                     navController = navController,
                     startDestination = MainScreen.LibraryV2.route,
                     modifier = Modifier.padding(innerPadding),
+                    // Navigation's own cross-fade, switched off for e-ink displays.
+                    enterTransition = { if (einkMode) EnterTransition.None else fadeIn(tween(SCREEN_FADE_MS)) },
+                    exitTransition = { if (einkMode) ExitTransition.None else fadeOut(tween(SCREEN_FADE_MS)) },
+                    popEnterTransition = { if (einkMode) EnterTransition.None else fadeIn(tween(SCREEN_FADE_MS)) },
+                    popExitTransition = { if (einkMode) ExitTransition.None else fadeOut(tween(SCREEN_FADE_MS)) },
                 ) {
                     composable(
                         route = "${MainScreen.LibraryV2.route}?collectionId={collectionId}&collectionName={collectionName}",

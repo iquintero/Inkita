@@ -217,6 +217,8 @@
     <string name="reader_mark_chapter_read_skip">Pokračovat bez označení</string>
     <string name="reader_font_selection">Vybrat font</string>
     <string name="reader_settings_general_section">Obecné</string>
+    <string name="reader_eink_mode">Režim e-ink</string>
+    <string name="reader_eink_mode_subtitle">Listuje okamžitě a vypne animace obrazovky pro e-ink displeje.</string>
     <string name="reader_keep_screen_on">Nechat obrazovku zapnutou</string>
     <string name="reader_keep_screen_on_subtitle">Zabrání ztmavení nebo uzamčení obrazovky během čtení.</string>
     <string name="reader_settings_image_section">Čtečka obrázků</string>

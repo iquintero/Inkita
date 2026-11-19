@@ -37,6 +37,8 @@ data class ReaderRenderParams(
     val imagePrefetchPages: Int,
     val pdfRightToLeft: Boolean = false,
     val epubPaged: Boolean = false,
+    /** False on e-ink displays: turn pages instantly instead of sliding. */
+    val pageAnimations: Boolean = true,
     val openAtEnd: Boolean = false,
     val insetTopPx: Int = 0,
     val insetBottomPx: Int = 0,

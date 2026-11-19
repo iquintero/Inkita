@@ -58,6 +58,8 @@ data class ReaderPrefs(
     val epubPaged: Boolean = false,
     /** Keep the screen from dimming and locking while a book is open. */
     val keepScreenOn: Boolean = false,
+    /** E-ink displays: no page-turn or screen-transition animations. */
+    val einkMode: Boolean = false,
 ) {
     companion object {
         const val DEFAULT_FONT_FAMILY = "literata"
@@ -98,6 +100,7 @@ class AppPreferences(
         private val KEY_PDF_RIGHT_TO_LEFT = booleanPreferencesKey("pdf_right_to_left")
         private val KEY_EPUB_PAGED = booleanPreferencesKey("epub_paged")
         private val KEY_READER_KEEP_SCREEN_ON = booleanPreferencesKey("reader_keep_screen_on")
+        private val KEY_READER_EINK_MODE = booleanPreferencesKey("reader_eink_mode")
 
         private val KEY_APP_LANGUAGE = stringPreferencesKey("app_language")
         private val KEY_APP_THEME = stringPreferencesKey("app_theme")
@@ -208,6 +211,7 @@ class AppPreferences(
                 pdfRightToLeft = prefs[KEY_PDF_RIGHT_TO_LEFT] ?: false,
                 epubPaged = prefs[KEY_EPUB_PAGED] ?: false,
                 keepScreenOn = prefs[KEY_READER_KEEP_SCREEN_ON] ?: false,
+                einkMode = prefs[KEY_READER_EINK_MODE] ?: false,
             )
         }
 
@@ -429,6 +433,7 @@ class AppPreferences(
                     pdfRightToLeft = prefs[KEY_PDF_RIGHT_TO_LEFT] ?: false,
                     epubPaged = prefs[KEY_EPUB_PAGED] ?: false,
                     keepScreenOn = prefs[KEY_READER_KEEP_SCREEN_ON] ?: false,
+                    einkMode = prefs[KEY_READER_EINK_MODE] ?: false,
                 )
             val next = current.transform()
             prefs[KEY_FONT_SIZE] = next.fontSize
@@ -443,6 +448,7 @@ class AppPreferences(
             prefs[KEY_PDF_RIGHT_TO_LEFT] = next.pdfRightToLeft
             prefs[KEY_EPUB_PAGED] = next.epubPaged
             prefs[KEY_READER_KEEP_SCREEN_ON] = next.keepScreenOn
+            prefs[KEY_READER_EINK_MODE] = next.einkMode
         }
     }
 
