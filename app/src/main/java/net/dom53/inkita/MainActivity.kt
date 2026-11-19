@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.view.KeyEvent
 import android.view.Window
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -90,6 +91,7 @@ import net.dom53.inkita.ui.history.HistoryScreen
 import net.dom53.inkita.ui.library.LibraryV2Screen
 import net.dom53.inkita.ui.navigation.MainScreen
 import net.dom53.inkita.ui.reader.model.ReaderReturn
+import net.dom53.inkita.ui.reader.screen.ReaderKeyEvents
 import net.dom53.inkita.ui.reader.screen.ReaderScreen
 import net.dom53.inkita.ui.seriesdetail.SeriesDetailScreenV2
 import net.dom53.inkita.ui.settings.SettingsScreen
@@ -99,6 +101,9 @@ import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
 
 class MainActivity : AppCompatActivity() {
+    // Page buttons (and optionally the volume keys) turn pages while a book is open instead of changing the volume.
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean = ReaderKeyEvents.handle(event) || super.dispatchKeyEvent(event)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 

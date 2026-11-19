@@ -280,6 +280,8 @@
     <string name="reader_settings_general_section">General</string>
     <string name="reader_eink_mode">E-ink mode</string>
     <string name="reader_eink_mode_subtitle">Turn pages instantly and skip screen animations, for e-ink displays.</string>
+    <string name="reader_volume_keys">Volume keys turn pages</string>
+    <string name="reader_volume_keys_subtitle">Use the volume buttons, or an e-reader\'s page buttons, to turn pages while reading.</string>
     <string name="reader_keep_screen_on">Keep screen on</string>
     <string name="reader_keep_screen_on_subtitle">Stop the screen from dimming or locking while you read.</string>
     <string name="reader_settings_image_section">Image reader</string>

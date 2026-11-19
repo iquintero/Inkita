@@ -60,6 +60,8 @@ data class ReaderPrefs(
     val keepScreenOn: Boolean = false,
     /** E-ink displays: no page-turn or screen-transition animations. */
     val einkMode: Boolean = false,
+    /** Volume keys turn pages while reading (page-up/page-down keys always do). */
+    val volumeKeysTurnPages: Boolean = false,
 ) {
     companion object {
         const val DEFAULT_FONT_FAMILY = "literata"
@@ -101,6 +103,7 @@ class AppPreferences(
         private val KEY_EPUB_PAGED = booleanPreferencesKey("epub_paged")
         private val KEY_READER_KEEP_SCREEN_ON = booleanPreferencesKey("reader_keep_screen_on")
         private val KEY_READER_EINK_MODE = booleanPreferencesKey("reader_eink_mode")
+        private val KEY_READER_VOLUME_KEYS = booleanPreferencesKey("reader_volume_keys_turn_pages")
 
         private val KEY_APP_LANGUAGE = stringPreferencesKey("app_language")
         private val KEY_APP_THEME = stringPreferencesKey("app_theme")
@@ -212,6 +215,7 @@ class AppPreferences(
                 epubPaged = prefs[KEY_EPUB_PAGED] ?: false,
                 keepScreenOn = prefs[KEY_READER_KEEP_SCREEN_ON] ?: false,
                 einkMode = prefs[KEY_READER_EINK_MODE] ?: false,
+                volumeKeysTurnPages = prefs[KEY_READER_VOLUME_KEYS] ?: false,
             )
         }
 
@@ -434,6 +438,7 @@ class AppPreferences(
                     epubPaged = prefs[KEY_EPUB_PAGED] ?: false,
                     keepScreenOn = prefs[KEY_READER_KEEP_SCREEN_ON] ?: false,
                     einkMode = prefs[KEY_READER_EINK_MODE] ?: false,
+                    volumeKeysTurnPages = prefs[KEY_READER_VOLUME_KEYS] ?: false,
                 )
             val next = current.transform()
             prefs[KEY_FONT_SIZE] = next.fontSize
@@ -449,6 +454,7 @@ class AppPreferences(
             prefs[KEY_EPUB_PAGED] = next.epubPaged
             prefs[KEY_READER_KEEP_SCREEN_ON] = next.keepScreenOn
             prefs[KEY_READER_EINK_MODE] = next.einkMode
+            prefs[KEY_READER_VOLUME_KEYS] = next.volumeKeysTurnPages
         }
     }
 

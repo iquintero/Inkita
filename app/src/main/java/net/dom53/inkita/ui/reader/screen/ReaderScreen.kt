@@ -9,6 +9,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.ParcelFileDescriptor
 import android.view.GestureDetector
+import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
@@ -455,6 +456,32 @@ internal fun BaseReaderScreen(
                 }
             }
         }
+    }
+    // Hardware page buttons (and, if enabled, the volume keys) turn pages while the reader is open.
+    val volumeKeysTurnPages by rememberUpdatedState(readerPrefs.volumeKeysTurnPages)
+    val turnPageByKey by rememberUpdatedState<(Boolean) -> Unit> { forward ->
+        if (pagedEnabled) {
+            pagedTurn(forward)
+        } else if (forward) {
+            goNextPage()
+        } else {
+            goPrevPage()
+        }
+    }
+    DisposableEffect(Unit) {
+        ReaderKeyEvents.onKey = onKey@{ keyCode, isNewPress ->
+            val forward =
+                when (keyCode) {
+                    KeyEvent.KEYCODE_PAGE_DOWN -> true
+                    KeyEvent.KEYCODE_PAGE_UP -> false
+                    KeyEvent.KEYCODE_VOLUME_DOWN -> if (volumeKeysTurnPages) true else return@onKey false
+                    KeyEvent.KEYCODE_VOLUME_UP -> if (volumeKeysTurnPages) false else return@onKey false
+                    else -> return@onKey false
+                }
+            if (isNewPress) turnPageByKey(forward)
+            true
+        }
+        onDispose { ReaderKeyEvents.onKey = null }
     }
     val openTocItem: (ReaderTocItem) -> Unit = { item ->
         showToc = false
