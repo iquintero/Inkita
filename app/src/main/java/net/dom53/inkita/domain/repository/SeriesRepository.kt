@@ -2,6 +2,7 @@ package net.dom53.inkita.domain.repository
 
 import net.dom53.inkita.domain.model.RecentlyUpdatedSeriesItem
 import net.dom53.inkita.domain.model.Series
+import net.dom53.inkita.domain.model.filter.KavitaSortField
 import net.dom53.inkita.domain.model.filter.SeriesQuery
 
 interface SeriesRepository {
@@ -33,6 +34,14 @@ interface SeriesRepository {
 
     suspend fun getSeriesForCollection(
         collectionId: Int,
+        pageNumber: Int,
+        pageSize: Int,
+    ): List<Series>
+
+    /** Every series the user can see, across all libraries, in the given order. */
+    suspend fun getAllSeries(
+        sortField: KavitaSortField,
+        ascending: Boolean,
         pageNumber: Int,
         pageSize: Int,
     ): List<Series>

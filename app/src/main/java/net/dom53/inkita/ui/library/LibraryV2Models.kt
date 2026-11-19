@@ -6,14 +6,6 @@ import net.dom53.inkita.domain.model.Person
 import net.dom53.inkita.domain.model.ReadingList
 import net.dom53.inkita.ui.common.DownloadState
 
-data class HomeSeriesItem(
-    val id: Int,
-    val title: String,
-    val localThumbPath: String? = null,
-    /** Fraction read (0..1), or null when unknown. */
-    val progress: Float? = null,
-)
-
 /** Fraction of a series that has been read, or null when the server didn't report page counts. */
 fun seriesProgress(
     pagesRead: Int?,
@@ -36,11 +28,13 @@ data class LibraryV2UiState(
     val libraries: List<Library> = emptyList(),
     val isLoading: Boolean = true,
     val error: String? = null,
-    val onDeck: List<HomeSeriesItem> = emptyList(),
-    val recentlyUpdated: List<HomeSeriesItem> = emptyList(),
-    val recentlyAdded: List<HomeSeriesItem> = emptyList(),
+    /** Every series, most recently read first. */
+    val homeSeries: List<net.dom53.inkita.domain.model.Series> = emptyList(),
     val isHomeLoading: Boolean = true,
+    val isHomeLoadingMore: Boolean = false,
     val homeLoadFailed: Boolean = false,
+    val homeSeriesPage: Int = 1,
+    val canLoadMoreHomeSeries: Boolean = true,
     val wantToRead: List<net.dom53.inkita.domain.model.Series> = emptyList(),
     val isWantToReadLoading: Boolean = false,
     val wantToReadError: String? = null,

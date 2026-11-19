@@ -707,6 +707,7 @@ class CacheManagerImpl(
             LibraryV2CacheKeys.HOME_ON_DECK,
             LibraryV2CacheKeys.HOME_RECENTLY_UPDATED,
             LibraryV2CacheKeys.HOME_RECENTLY_ADDED,
+            LibraryV2CacheKeys.HOME_LAST_READ,
             -> policy.libraryHomeEnabled
             LibraryV2CacheKeys.WANT_TO_READ -> policy.libraryWantEnabled
             LibraryV2CacheKeys.COLLECTIONS,

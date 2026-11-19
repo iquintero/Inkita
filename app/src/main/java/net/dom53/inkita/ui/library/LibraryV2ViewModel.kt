@@ -27,6 +27,7 @@ import net.dom53.inkita.domain.model.Collection
 import net.dom53.inkita.domain.model.Format
 import net.dom53.inkita.domain.model.Library
 import net.dom53.inkita.domain.model.Series
+import net.dom53.inkita.domain.model.filter.KavitaSortField
 import net.dom53.inkita.domain.repository.CollectionsRepository
 import net.dom53.inkita.domain.repository.LibraryRepository
 import net.dom53.inkita.domain.repository.PersonRepository
@@ -218,172 +219,67 @@ class LibraryV2ViewModel(
         if (homeLoadJob?.isActive == true) return
         homeLoadJob =
             viewModelScope.launch {
-                val previous = _state.value
                 _state.update { it.copy(isHomeLoading = true, homeLoadFailed = false) }
-                val refresh = forceRefresh || previous.homeLoadFailed || appPreferences.cacheAlwaysRefreshFlow.first()
-                val staleMinutes = appPreferences.cacheStaleMinutesFlow.first()
-                val isOnline = NetworkUtils.isOnline(appPreferences.appContext)
-                val cachedOnDeck =
-                    cacheManager.getCachedLibraryV2SeriesList(
-                        LibraryV2CacheKeys.HOME_ON_DECK,
-                        "",
-                    )
-                val cachedUpdated =
-                    cacheManager.getCachedLibraryV2SeriesList(
-                        LibraryV2CacheKeys.HOME_RECENTLY_UPDATED,
-                        "",
-                    )
-                val cachedAdded =
-                    cacheManager.getCachedLibraryV2SeriesList(
-                        LibraryV2CacheKeys.HOME_RECENTLY_ADDED,
-                        "",
-                    )
-                val cachedUpdatedAt =
-                    cacheManager.getLibraryV2SeriesListUpdatedAt(
-                        LibraryV2CacheKeys.HOME_ON_DECK,
-                        "",
-                    )
-                val cachedHasData =
-                    cachedOnDeck.isNotEmpty() || cachedUpdated.isNotEmpty() || cachedAdded.isNotEmpty()
-                val availableOnDeck = cachedOnDeck.toHomeItems().ifEmpty { previous.onDeck }
-                val availableUpdated = cachedUpdated.toHomeItems().ifEmpty { previous.recentlyUpdated }
-                val availableAdded = cachedAdded.toHomeItems().ifEmpty { previous.recentlyAdded }
-                val isStale =
-                    cachedUpdatedAt == null ||
-                        (System.currentTimeMillis() - cachedUpdatedAt) > staleMinutes * 60L * 1000L
-                logCacheDecision(
-                    "home",
-                    "online=$isOnline cache=$cachedHasData stale=$isStale refresh=$refresh onDeck=${cachedOnDeck.size} updated=${cachedUpdated.size} added=${cachedAdded.size}",
-                )
-                val showDebugToast = appPreferences.debugToastsFlow.first()
-                if (cachedHasData) {
-                    _state.update {
-                        it.copy(
-                            onDeck = availableOnDeck,
-                            recentlyUpdated = availableUpdated,
-                            recentlyAdded = availableAdded,
-                            isHomeLoading = true,
-                        )
+                if (_state.value.homeSeries.isEmpty()) {
+                    val cached = cacheManager.getCachedLibraryV2SeriesList(LibraryV2CacheKeys.HOME_LAST_READ, "")
+                    if (cached.isNotEmpty()) {
+                        _state.update { it.copy(homeSeries = cached) }
+                        updateDownloadStates(lastDownloadedItems)
                     }
-                    updateDownloadStates(lastDownloadedItems)
-                    if (!isOnline || (!refresh && !isStale)) {
-                        logCacheDecision("home", "using cached data only")
-                        if (showDebugToast) {
-                            android.widget.Toast
-                                .makeText(
-                                    appPreferences.appContext,
-                                    appPreferences.appContext.getString(R.string.debug_cache_use),
-                                    android.widget.Toast.LENGTH_SHORT,
-                                ).show()
-                        }
-                        _state.update { it.copy(isHomeLoading = false) }
-                        return@launch
-                    }
-                    if (showDebugToast) {
-                        val message =
-                            if (refresh) {
-                                R.string.debug_cache_force_online
-                            } else {
-                                R.string.debug_cache_stale_reload
-                            }
-                        android.widget.Toast
-                            .makeText(
-                                appPreferences.appContext,
-                                appPreferences.appContext.getString(message),
-                                android.widget.Toast.LENGTH_SHORT,
-                            ).show()
-                    }
-                } else if (showDebugToast) {
-                    logCacheDecision("home", if (isOnline) "cache miss; fetch fresh" else "cache miss; offline")
-                    val message =
-                        if (isOnline) {
-                            R.string.debug_cache_use_fresh
-                        } else {
-                            R.string.debug_cache_no_cache
-                        }
-                    android.widget.Toast
-                        .makeText(
-                            appPreferences.appContext,
-                            appPreferences.appContext.getString(message),
-                            android.widget.Toast.LENGTH_SHORT,
-                        ).show()
                 }
+                val isOnline = NetworkUtils.isOnline(appPreferences.appContext)
+                logCacheDecision("home", "online=$isOnline refresh=$forceRefresh cached=${_state.value.homeSeries.size}")
                 if (!isOnline) {
-                    val hasContent = availableOnDeck.isNotEmpty() || availableUpdated.isNotEmpty() || availableAdded.isNotEmpty()
-                    _state.update { it.copy(isHomeLoading = false, homeLoadFailed = !hasContent) }
+                    _state.update { it.copy(isHomeLoading = false, homeLoadFailed = it.homeSeries.isEmpty()) }
                     return@launch
                 }
-                val onDeck =
-                    refreshHomeSection(LibraryV2CacheKeys.HOME_ON_DECK, availableOnDeck) {
-                        seriesRepository.getOnDeckSeries(1, 20, 0)
-                    }
-                val recentlyUpdated =
-                    refreshHomeSection(LibraryV2CacheKeys.HOME_RECENTLY_UPDATED, availableUpdated) {
-                        seriesRepository.getRecentlyUpdatedSeries(1, 20).mapNotNull { item ->
-                            val id = item.seriesId ?: return@mapNotNull null
-                            Series(
-                                id = id,
-                                name = item.seriesName?.ifBlank { null } ?: item.title?.ifBlank { null } ?: "Series $id",
-                                summary = null,
-                                libraryId = null,
-                                format = null,
-                                pages = null,
-                                pagesRead = null,
-                                readState = null,
-                            )
-                        }
-                    }
-                val recentlyAdded =
-                    refreshHomeSection(LibraryV2CacheKeys.HOME_RECENTLY_ADDED, availableAdded) {
-                        seriesRepository.getRecentlyAddedSeries(1, 20)
-                    }
+                val fresh = fetchHomePage(1)
+                if (fresh == null) {
+                    _state.update { it.copy(isHomeLoading = false, homeLoadFailed = it.homeSeries.isEmpty()) }
+                    return@launch
+                }
+                cacheManager.cacheLibraryV2SeriesList(LibraryV2CacheKeys.HOME_LAST_READ, "", fresh)
                 _state.update {
                     it.copy(
-                        onDeck = onDeck.items,
-                        recentlyUpdated = recentlyUpdated.items,
-                        recentlyAdded = recentlyAdded.items,
+                        homeSeries = fresh,
                         isHomeLoading = false,
-                        homeLoadFailed = onDeck.failed || recentlyUpdated.failed || recentlyAdded.failed,
+                        homeSeriesPage = 1,
+                        canLoadMoreHomeSeries = fresh.size == HOME_PAGE_SIZE,
                     )
                 }
                 updateDownloadStates(lastDownloadedItems)
             }
     }
 
-    private suspend fun refreshHomeSection(
-        listType: String,
-        available: List<HomeSeriesItem>,
-        fetch: suspend () -> List<Series>,
-    ): HomeSectionResult {
-        val series =
-            try {
-                fetch()
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                LoggingManager.w("LibraryHome", "Could not refresh $listType (${e.javaClass.simpleName})")
-                return HomeSectionResult(available, failed = true)
+    fun loadMoreHome() {
+        val current = _state.value
+        if (current.isHomeLoading || current.isHomeLoadingMore || !current.canLoadMoreHomeSeries || current.homeSeries.isEmpty()) return
+        viewModelScope.launch {
+            _state.update { it.copy(isHomeLoadingMore = true) }
+            val nextPage = current.homeSeriesPage + 1
+            val page = fetchHomePage(nextPage)
+            _state.update {
+                it.copy(
+                    homeSeries = if (page == null) it.homeSeries else it.homeSeries + page,
+                    isHomeLoadingMore = false,
+                    homeSeriesPage = if (page.isNullOrEmpty()) it.homeSeriesPage else nextPage,
+                    canLoadMoreHomeSeries = page != null && page.size == HOME_PAGE_SIZE,
+                )
             }
-        cacheManager.cacheLibraryV2SeriesList(listType, "", series)
-        return HomeSectionResult(series.toHomeItems(), failed = false)
+            updateDownloadStates(lastDownloadedItems)
+        }
     }
 
-    private fun List<Series>.toHomeItems(): List<HomeSeriesItem> =
-        map { series ->
-            HomeSeriesItem(
-                series.id,
-                series.name.ifBlank {
-                    "Series ${series.id}"
-                },
-                series.localThumbPath,
-                seriesProgress(series.pagesRead, series.pages),
-            )
+    /** One page of every series, most recently read first; null when it could not be loaded. */
+    private suspend fun fetchHomePage(pageNumber: Int): List<Series>? =
+        try {
+            seriesRepository.getAllSeries(KavitaSortField.LastRead, ascending = false, pageNumber, HOME_PAGE_SIZE)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            LoggingManager.w("LibraryHome", "Could not load page $pageNumber (${e.javaClass.simpleName})")
+            null
         }
-
-    private data class HomeSectionResult(
-        val items: List<HomeSeriesItem>,
-        val failed: Boolean,
-    )
 
     private fun ensureWantToRead() {
         val current = _state.value
@@ -936,9 +832,7 @@ class LibraryV2ViewModel(
             val resolvedPages = pages ?: current?.pages
             map[id] = SeriesDownloadInfo(id, resolvedFormat, resolvedPages)
         }
-        state.onDeck.forEach { add(it.id, null, null) }
-        state.recentlyUpdated.forEach { add(it.id, null, null) }
-        state.recentlyAdded.forEach { add(it.id, null, null) }
+        state.homeSeries.forEach { add(it.id, it.format, it.pages) }
         state.wantToRead.forEach { add(it.id, it.format, it.pages) }
         state.collectionSeries.forEach { add(it.id, it.format, it.pages) }
         state.librarySeries.forEach { add(it.id, it.format, it.pages) }
@@ -971,6 +865,8 @@ class LibraryV2ViewModel(
     }
 
     companion object {
+        private const val HOME_PAGE_SIZE = 25
+
         fun provideFactory(
             libraryRepository: LibraryRepository,
             seriesRepository: SeriesRepository,

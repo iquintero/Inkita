@@ -7,6 +7,7 @@ object LibraryV2CacheKeys {
     const val HOME_ON_DECK = "home_on_deck"
     const val HOME_RECENTLY_UPDATED = "home_recently_updated"
     const val HOME_RECENTLY_ADDED = "home_recently_added"
+    const val HOME_LAST_READ = "home_last_read"
     const val WANT_TO_READ = "want_to_read"
     const val COLLECTIONS = "collections"
     const val READING_LISTS = "reading_lists"

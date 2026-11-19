@@ -300,30 +300,12 @@ fun LibraryV2Screen(
             }
             when (uiState.selectedSection) {
                 LibraryV2Section.Home -> {
-                    Column(
-                        modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 16.dp)
-                                .verticalScroll(rememberScrollState()),
-                    ) {
-                        Text(
-                            text = "Home",
-                            style = MaterialTheme.typography.titleLarge,
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        val hasContent =
-                            uiState.onDeck.isNotEmpty() || uiState.recentlyUpdated.isNotEmpty() || uiState.recentlyAdded.isNotEmpty()
-                        if (uiState.isHomeLoading && !hasContent) {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                CircularProgressIndicator()
-                            }
-                        }
-
-                        if (uiState.homeLoadFailed) {
+                    if (uiState.homeLoadFailed && uiState.homeSeries.isEmpty()) {
+                        Column(
+                            modifier = Modifier.fillMaxSize().padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center,
+                        ) {
                             Text(
                                 text = stringResource(R.string.library_home_load_failed),
                                 color = MaterialTheme.colorScheme.error,
@@ -333,33 +315,19 @@ fun LibraryV2Screen(
                                 Text(stringResource(R.string.download_action_retry))
                             }
                         }
-
-                        if (hasContent || (!uiState.isHomeLoading && !uiState.homeLoadFailed)) {
-                            HomeSection(
-                                title = "On Deck",
-                                items = uiState.onDeck,
-                                config = config,
-                                downloadStates = downloadStates,
-                                showDownloadBadges = showDownloadBadges,
-                                onOpenSeries = onOpenSeries,
-                            )
-                            HomeSection(
-                                title = "Recently Updated Series",
-                                items = uiState.recentlyUpdated,
-                                config = config,
-                                downloadStates = downloadStates,
-                                showDownloadBadges = showDownloadBadges,
-                                onOpenSeries = onOpenSeries,
-                            )
-                            HomeSection(
-                                title = "Newly Added Series",
-                                items = uiState.recentlyAdded,
-                                config = config,
-                                downloadStates = downloadStates,
-                                showDownloadBadges = showDownloadBadges,
-                                onOpenSeries = onOpenSeries,
-                            )
-                        }
+                    } else {
+                        LibrarySeriesGrid(
+                            items = uiState.homeSeries,
+                            isLoading = uiState.isHomeLoading,
+                            isLoadingMore = uiState.isHomeLoadingMore,
+                            error = null,
+                            accessDenied = false,
+                            config = config,
+                            downloadStates = downloadStates,
+                            showDownloadBadges = showDownloadBadges,
+                            onLoadMore = viewModel::loadMoreHome,
+                            onOpenSeries = onOpenSeries,
+                        )
                     }
                 }
 
@@ -469,99 +437,6 @@ private fun DrawerItem(
             text = label,
             style = MaterialTheme.typography.bodyLarge,
             color = color,
-        )
-    }
-}
-
-@Composable
-private fun HomeSection(
-    title: String,
-    items: List<HomeSeriesItem>,
-    config: AppConfig,
-    downloadStates: Map<Int, DownloadState>,
-    showDownloadBadges: Boolean,
-    onOpenSeries: (Int) -> Unit,
-) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.titleMedium,
-    )
-    Spacer(modifier = Modifier.height(8.dp))
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            rowItems(items, key = { it.id }) { item ->
-                SeriesCard(
-                    item = item,
-                    config = config,
-                    downloadState = downloadStates[item.id] ?: DownloadState.None,
-                    showDownloadBadges = showDownloadBadges,
-                    onOpenSeries = onOpenSeries,
-                )
-            }
-        }
-    }
-    Spacer(modifier = Modifier.height(16.dp))
-}
-
-@Composable
-private fun SeriesCard(
-    item: HomeSeriesItem,
-    config: AppConfig,
-    downloadState: DownloadState,
-    showDownloadBadges: Boolean,
-    onOpenSeries: (Int) -> Unit,
-) {
-    val imageUrl = item.localThumbPath ?: seriesCoverUrl(config, item.id)
-    Column(
-        modifier =
-            Modifier
-                .width(120.dp)
-                .padding(bottom = 4.dp)
-                .clickable { onOpenSeries(item.id) },
-    ) {
-        Box {
-            AsyncImage(
-                model =
-                    ImageRequest
-                        .Builder(LocalContext.current)
-                        .data(imageUrl)
-                        .crossfade(true)
-                        .build(),
-                contentDescription = null,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(170.dp)
-                        .clip(
-                            androidx.compose.foundation.shape
-                                .RoundedCornerShape(8.dp),
-                        ),
-                contentScale = ContentScale.Crop,
-            )
-            CoverProgressBar(
-                progress = item.progress,
-                modifier = Modifier.align(Alignment.BottomCenter),
-            )
-            if (showDownloadBadges) {
-                DownloadStateBadge(
-                    state = downloadState,
-                    modifier =
-                        Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(end = 6.dp, bottom = 10.dp),
-                )
-            }
-        }
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = item.title,
-            style = MaterialTheme.typography.bodySmall,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
         )
     }
 }

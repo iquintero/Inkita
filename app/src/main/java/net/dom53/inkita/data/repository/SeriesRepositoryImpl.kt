@@ -285,6 +285,49 @@ class SeriesRepositoryImpl internal constructor(
         return cacheManager.enrichThumbnails(domain)
     }
 
+    override suspend fun getAllSeries(
+        sortField: KavitaSortField,
+        ascending: Boolean,
+        pageNumber: Int,
+        pageSize: Int,
+    ): List<Series> {
+        val config = configFlow.first()
+
+        if (!config.isConfigured) {
+            return emptyList()
+        }
+
+        if (!NetworkUtils.isOnline(context)) {
+            throw IOException("Offline")
+        }
+
+        val api =
+            KavitaApiFactory.createAuthenticated(config)
+
+        val filter =
+            FilterV2Dto(
+                id = null,
+                name = null,
+                statements = emptyList(),
+                combination = 1,
+                sortOptions = SortOptionDto(sortField = sortField.id, isAscending = ascending),
+                limitTo = 0,
+            )
+
+        val response =
+            api.getSeriesV2(
+                filter = filter,
+                pageNumber = pageNumber,
+                pageSize = pageSize,
+            )
+
+        if (!response.isSuccessful) {
+            throw Exception("Error loading series: HTTP ${response.code()} ${response.message()}")
+        }
+
+        return cacheManager.enrichThumbnails(response.body().orEmpty().map { it.toDomain() })
+    }
+
     override suspend fun getSeriesForLibrary(
         libraryId: Int,
         pageNumber: Int,
