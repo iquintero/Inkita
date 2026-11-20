@@ -276,6 +276,7 @@ fun KavernApp(
             AppTheme.Light -> false
             AppTheme.Dark -> true
         }
+    val dynamicColor by appPreferences.dynamicColorFlow.collectAsState(initial = true)
     val maxThumbnailsParallel by appPreferences.maxThumbnailsParallelFlow.collectAsState(initial = 4)
     val view = LocalView.current
 
@@ -288,7 +289,7 @@ fun KavernApp(
         initial = AppConfig(serverUrl = "", apiKey = "", imageApiKey = "", userId = 0),
     )
 
-    KavernTheme(darkTheme = darkTheme, dynamicColor = false) {
+    KavernTheme(darkTheme = darkTheme, dynamicColor = dynamicColor, einkMode = einkMode) {
         if (showNotifDialog.value && !notifPromptShown && !notificationsEnabled) {
             AlertDialog(
                 onDismissRequest = {

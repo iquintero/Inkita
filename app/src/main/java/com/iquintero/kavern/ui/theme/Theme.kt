@@ -2,65 +2,56 @@ package com.iquintero.kavern.ui.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialExpressiveTheme
+import androidx.compose.material3.MotionScheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 
-private val DarkColorScheme =
-    darkColorScheme(
-        primary = DarkAccent,
-        secondary = DarkAccent,
-        tertiary = DarkAccent,
-        background = DarkBg,
-        surface = DarkSurface,
-        onPrimary = Color.White,
-        onSecondary = Color.White,
-        onTertiary = Color.White,
-        onBackground = DarkOnSurface,
-        onSurface = DarkOnSurface,
+/** Slightly squarer corners than the default, so e-ink panels draw crisp outlines. */
+private val EinkShapes =
+    Shapes(
+        extraSmall = RoundedCornerShape(2.dp),
+        small = RoundedCornerShape(4.dp),
+        medium = RoundedCornerShape(6.dp),
+        large = RoundedCornerShape(8.dp),
+        extraLarge = RoundedCornerShape(12.dp),
     )
 
-private val LightColorScheme =
-    lightColorScheme(
-        primary = Purple40,
-        secondary = PurpleGrey40,
-        tertiary = Pink40,
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-     */
-    )
-
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun KavernTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,
+    einkMode: Boolean = false,
     content: @Composable () -> Unit,
 ) {
-    val colorScheme =
+    val colorScheme: ColorScheme =
         when {
+            einkMode -> if (darkTheme) EinkDarkColors else EinkLightColors
+
             dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
                 val context = LocalContext.current
                 if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
             }
 
-            darkTheme -> DarkColorScheme
-            else -> LightColorScheme
+            darkTheme -> KavernDarkColors
+
+            else -> KavernLightColors
         }
 
-    MaterialTheme(
+    MaterialExpressiveTheme(
         colorScheme = colorScheme,
+        // E-ink panels refresh slowly, so motion would only smear.
+        motionScheme = if (einkMode) MotionScheme.standard() else MotionScheme.expressive(),
+        shapes = if (einkMode) EinkShapes else Shapes(),
         typography = Typography,
         content = content,
     )

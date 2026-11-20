@@ -107,6 +107,7 @@ class AppPreferences(
 
         private val KEY_APP_LANGUAGE = stringPreferencesKey("app_language")
         private val KEY_APP_THEME = stringPreferencesKey("app_theme")
+        private val KEY_DYNAMIC_COLOR = booleanPreferencesKey("app_dynamic_color")
         private val KEY_CACHE_ENABLED = booleanPreferencesKey("cache_enabled")
         private val KEY_LIBRARY_CACHE_ENABLED = booleanPreferencesKey("library_cache_enabled")
         private val KEY_BROWSE_CACHE_ENABLED = booleanPreferencesKey("browse_cache_enabled")
@@ -233,6 +234,9 @@ class AppPreferences(
                 else -> AppTheme.System
             }
         }
+
+    val dynamicColorFlow: Flow<Boolean> =
+        context.dataStore.data.map { prefs -> prefs[KEY_DYNAMIC_COLOR] ?: true }
 
     val cacheEnabledFlow: Flow<Boolean> =
         context.dataStore.data.map { prefs -> prefs[KEY_CACHE_ENABLED] ?: true }
@@ -479,6 +483,10 @@ class AppPreferences(
                     AppTheme.Dark -> "dark"
                 }
         }
+    }
+
+    suspend fun setDynamicColor(enabled: Boolean) {
+        context.dataStore.edit { prefs -> prefs[KEY_DYNAMIC_COLOR] = enabled }
     }
 
     suspend fun setCacheEnabled(enabled: Boolean) {

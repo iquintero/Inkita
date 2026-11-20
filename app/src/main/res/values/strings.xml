@@ -444,6 +444,8 @@
     <string name="settings_kavita_login_toast">Fill URL and API key.</string>
     <string name="settings_appearance_by_system">Follow system</string>
     <string name="settings_appearance_dark">Dark</string>
+    <string name="settings_appearance_dynamic_color">Dynamic color</string>
+    <string name="settings_appearance_dynamic_color_subtitle">Use colors from your wallpaper. Turn off to use the Kavern green palette. E-ink mode always uses black and white.</string>
     <string name="settings_appearance_light">Light</string>
     <!-- Stats-->
     <string name="stats_failed_stat_load">Failed to load statistics.</string>

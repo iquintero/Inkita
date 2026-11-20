@@ -1,33 +1,31 @@
 package com.iquintero.kavern.ui.settings.screens
 
-import androidx.compose.foundation.clickable
+import android.os.Build
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.iquintero.kavern.R
 import com.iquintero.kavern.core.storage.AppPreferences
 import com.iquintero.kavern.core.storage.AppTheme
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 @Composable
@@ -36,13 +34,14 @@ fun SettingsAppearanceScreen(
     onBack: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
-    var selectedTheme by remember { mutableStateOf(AppTheme.System) }
-
-    LaunchedEffect(Unit) {
-        appPreferences.appThemeFlow.collectLatest { theme ->
-            selectedTheme = theme
-        }
-    }
+    val selectedTheme by appPreferences.appThemeFlow.collectAsState(initial = AppTheme.System)
+    val dynamicColor by appPreferences.dynamicColorFlow.collectAsState(initial = true)
+    val themeOptions =
+        listOf(
+            AppTheme.System to R.string.settings_appearance_by_system,
+            AppTheme.Light to R.string.settings_appearance_light,
+            AppTheme.Dark to R.string.settings_appearance_dark,
+        )
 
     Column(
         modifier =
@@ -56,46 +55,29 @@ fun SettingsAppearanceScreen(
         }
         Text(stringResource(R.string.settings_appearance_title), style = MaterialTheme.typography.headlineSmall)
 
-        ThemeOptionRow(
-            label = stringResource(R.string.settings_appearance_by_system),
-            selected = selectedTheme == AppTheme.System,
-        ) {
-            selectedTheme = AppTheme.System
-            scope.launch { appPreferences.setAppTheme(AppTheme.System) }
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+            themeOptions.forEachIndexed { index, (theme, label) ->
+                SegmentedButton(
+                    selected = selectedTheme == theme,
+                    onClick = { scope.launch { appPreferences.setAppTheme(theme) } },
+                    shape = SegmentedButtonDefaults.itemShape(index, themeOptions.size),
+                ) {
+                    Text(stringResource(label))
+                }
+            }
         }
-        ThemeOptionRow(
-            label = stringResource(R.string.settings_appearance_light),
-            selected = selectedTheme == AppTheme.Light,
-        ) {
-            selectedTheme = AppTheme.Light
-            scope.launch { appPreferences.setAppTheme(AppTheme.Light) }
-        }
-        ThemeOptionRow(
-            label = stringResource(R.string.settings_appearance_dark),
-            selected = selectedTheme == AppTheme.Dark,
-        ) {
-            selectedTheme = AppTheme.Dark
-            scope.launch { appPreferences.setAppTheme(AppTheme.Dark) }
-        }
-    }
-}
 
-@Composable
-private fun ThemeOptionRow(
-    label: String,
-    selected: Boolean,
-    onSelect: () -> Unit,
-) {
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp)
-                .clickable { onSelect() },
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        RadioButton(selected = selected, onClick = onSelect)
-        Text(label, style = MaterialTheme.typography.bodyLarge)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.settings_appearance_dynamic_color)) },
+                supportingContent = { Text(stringResource(R.string.settings_appearance_dynamic_color_subtitle)) },
+                trailingContent = {
+                    Switch(
+                        checked = dynamicColor,
+                        onCheckedChange = { scope.launch { appPreferences.setDynamicColor(it) } },
+                    )
+                },
+            )
+        }
     }
 }
