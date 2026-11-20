@@ -1,18 +1,8 @@
 package net.dom53.inkita.ui.settings.screens
 
-import android.app.DownloadManager
-import android.content.BroadcastReceiver
-import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.net.Uri
-import android.os.Build
-import android.os.Environment
-import android.provider.Settings
-import android.widget.Toast
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -27,24 +17,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Update
 import androidx.compose.material.icons.outlined.Language
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,24 +37,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.mikepenz.aboutlibraries.ui.compose.android.produceLibraries
 import com.mikepenz.aboutlibraries.ui.compose.m3.LibrariesContainer
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
-import net.dom53.inkita.BuildConfig
 import net.dom53.inkita.R
-import net.dom53.inkita.core.logging.LoggingManager
-import net.dom53.inkita.core.update.UpdateChecker
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-
-private const val APK_MIME_TYPE = "application/vnd.android.package-archive"
 
 @Composable
 fun SettingsAboutScreen(onBack: () -> Unit) {
@@ -85,13 +58,6 @@ fun SettingsAboutScreen(onBack: () -> Unit) {
                 pkg.versionName ?: pkg.longVersionCode.toString()
             }.getOrDefault("--")
         }
-    val versionCode =
-        remember {
-            runCatching {
-                val pkg = context.packageManager.getPackageInfo(context.packageName, 0)
-                pkg.longVersionCode
-            }.getOrDefault(0L)
-        }
     val buildTime =
         remember {
             runCatching {
@@ -101,156 +67,6 @@ fun SettingsAboutScreen(onBack: () -> Unit) {
             }.getOrDefault("--")
         }
     val kavitaTarget = "nightly-0.8.8.15"
-    val scope = rememberCoroutineScope()
-    var isCheckingUpdate by remember { mutableStateOf(false) }
-    var pendingDownloadId by rememberSaveable { mutableStateOf<Long?>(null) }
-    var awaitingInstallPermission by rememberSaveable { mutableStateOf(false) }
-    var pendingUpdateVersion by remember { mutableStateOf<String?>(null) }
-    var pendingUpdateUrl by remember { mutableStateOf<String?>(null) }
-    var showUpdateDialog by remember { mutableStateOf(false) }
-    val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-    val installPermissionLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            if (!context.packageManager.canRequestPackageInstalls()) pendingDownloadId = null
-            awaitingInstallPermission = false
-        }
-
-    fun showToast(message: String) {
-        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-    }
-
-    DisposableEffect(context, lifecycle, pendingDownloadId, awaitingInstallPermission) {
-        val downloadId = pendingDownloadId ?: return@DisposableEffect onDispose { }
-        if (awaitingInstallPermission) return@DisposableEffect onDispose { }
-
-        fun openDownloadedUpdate() {
-            if (pendingDownloadId != downloadId || awaitingInstallPermission || !lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) return
-
-            val status =
-                downloadManager.query(DownloadManager.Query().setFilterById(downloadId))?.use { cursor ->
-                    if (cursor.moveToFirst()) cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS)) else null
-                }
-            when (status) {
-                DownloadManager.STATUS_SUCCESSFUL -> {
-                    if (!context.packageManager.canRequestPackageInstalls()) {
-                        awaitingInstallPermission = true
-                        runCatching {
-                            installPermissionLauncher.launch(
-                                Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.fromParts("package", context.packageName, null)),
-                            )
-                        }.onSuccess {
-                            showToast(context.getString(R.string.settings_about_update_allow_install))
-                        }.onFailure {
-                            pendingDownloadId = null
-                            awaitingInstallPermission = false
-                            LoggingManager.w("AppUpdate", "Could not open installation permission settings", it)
-                            showToast(context.getString(R.string.settings_about_update_install_failed))
-                        }
-                        return
-                    }
-                    pendingDownloadId = null
-                    val apkUri = downloadManager.getUriForDownloadedFile(downloadId)
-                    val opened =
-                        apkUri != null &&
-                            runCatching {
-                                context.startActivity(
-                                    Intent(Intent.ACTION_VIEW)
-                                        .setDataAndType(apkUri, APK_MIME_TYPE)
-                                        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION),
-                                )
-                            }.onFailure { LoggingManager.w("AppUpdate", "Could not open the APK installer", it) }
-                                .isSuccess
-                    if (!opened) showToast(context.getString(R.string.settings_about_update_install_failed))
-                }
-                DownloadManager.STATUS_FAILED, null -> {
-                    pendingDownloadId = null
-                    showToast(context.getString(R.string.settings_about_update_download_failed))
-                }
-            }
-        }
-
-        val receiver =
-            object : BroadcastReceiver() {
-                override fun onReceive(
-                    context: Context,
-                    intent: Intent,
-                ) {
-                    if (intent.action == DownloadManager.ACTION_DOWNLOAD_COMPLETE &&
-                        intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L) == downloadId
-                    ) {
-                        openDownloadedUpdate()
-                    }
-                }
-            }
-        // DownloadManager sends this from another process. Only act on the status of our own download ID.
-        ContextCompat.registerReceiver(context, receiver, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE), ContextCompat.RECEIVER_EXPORTED)
-        val observer =
-            LifecycleEventObserver { _, event ->
-                if (event == Lifecycle.Event.ON_RESUME) openDownloadedUpdate()
-            }
-        lifecycle.addObserver(observer)
-        openDownloadedUpdate()
-        onDispose {
-            lifecycle.removeObserver(observer)
-            context.unregisterReceiver(receiver)
-        }
-    }
-    val onCheckUpdates: () -> Unit = onCheckUpdates@{
-        if (isCheckingUpdate) return@onCheckUpdates
-        isCheckingUpdate = true
-        scope.launch {
-            val message =
-                try {
-                    val update = UpdateChecker.findUpdate(versionName, versionCode, BuildConfig.RELEASE_CHANNEL)
-                    if (update == null) {
-                        context.getString(R.string.settings_about_up_to_date)
-                    } else {
-                        pendingUpdateVersion = update.versionName
-                        pendingUpdateUrl = update.url
-                        showUpdateDialog = true
-                        context.getString(R.string.settings_about_update_available, update.versionName)
-                    }
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (_: Exception) {
-                    context.getString(R.string.settings_about_update_failed)
-                } finally {
-                    isCheckingUpdate = false
-                }
-            showToast(message)
-        }
-    }
-    val startDownload: () -> Unit = download@{
-        if (pendingDownloadId != null) return@download
-        val url = pendingUpdateUrl
-        val version = pendingUpdateVersion
-        if (url.isNullOrBlank() || version.isNullOrBlank()) {
-            showToast(context.getString(R.string.settings_about_update_failed))
-            return@download
-        }
-        runCatching {
-            val request =
-                DownloadManager
-                    .Request(Uri.parse(url))
-                    .setTitle("Inkita $version")
-                    .setMimeType(APK_MIME_TYPE)
-                    .setDescription(context.getString(R.string.settings_about_update_downloading))
-                    .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            val path = "InkitaUpdates/inkita-$version.apk"
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, path)
-            } else {
-                request.setDestinationInExternalFilesDir(context, Environment.DIRECTORY_DOWNLOADS, path)
-            }
-            downloadManager.enqueue(request)
-        }.onSuccess { id ->
-            pendingDownloadId = id
-            showToast(context.getString(R.string.settings_about_update_downloading))
-        }.onFailure {
-            LoggingManager.w("AppUpdate", "Could not start the APK download", it)
-            showToast(context.getString(R.string.settings_about_update_download_failed))
-        }
-    }
     val openUrl: (String) -> Unit = { url ->
         runCatching {
             context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
@@ -274,7 +90,7 @@ fun SettingsAboutScreen(onBack: () -> Unit) {
             }
             Icon(
                 painter = painterResource(id = R.drawable.inkita_launcher_foreground),
-                contentDescription = "Inkita logo",
+                contentDescription = "Kavern logo",
                 modifier = Modifier.size(32.dp),
                 tint = Color.Unspecified,
             )
@@ -284,15 +100,6 @@ fun SettingsAboutScreen(onBack: () -> Unit) {
         Text(stringResource(R.string.settings_about_build_time) + ": $buildTime")
         Text(stringResource(R.string.settings_about_kavita_version) + ": $kavitaTarget")
 
-        ListItem(
-            headlineContent = { Text(stringResource(R.string.settings_about_check_updates)) },
-            leadingContent = { Icon(Icons.Filled.SystemUpdate, contentDescription = null, modifier = Modifier.size(24.dp)) },
-            modifier =
-                Modifier
-                    .clickable { onCheckUpdates() }
-                    .padding(vertical = 2.dp),
-        )
-
         Text(stringResource(R.string.settings_about_label_whats_new), style = MaterialTheme.typography.titleMedium)
         ListItem(
             headlineContent = { Text(stringResource(R.string.settings_about_changelog_title)) },
@@ -300,7 +107,7 @@ fun SettingsAboutScreen(onBack: () -> Unit) {
             leadingContent = { Icon(Icons.Filled.Update, contentDescription = null, modifier = Modifier.size(24.dp)) },
             modifier =
                 Modifier
-                    .clickable { openUrl("https://github.com/dom-53/Inkita/blob/develop/CHANGELOG.md") }
+                    .clickable { openUrl("https://github.com/iquintero/Inkita/blob/develop/CHANGELOG.md") }
                     .padding(vertical = 2.dp),
         )
 
@@ -405,21 +212,5 @@ fun SettingsAboutScreen(onBack: () -> Unit) {
                 modifier = Modifier.fillMaxSize(),
             )
         }
-    }
-    if (showUpdateDialog) {
-        AlertDialog(
-            onDismissRequest = { showUpdateDialog = false },
-            title = { Text(stringResource(R.string.settings_about_update_available, pendingUpdateVersion ?: "")) },
-            text = { Text(stringResource(R.string.settings_about_update_prompt)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    showUpdateDialog = false
-                    startDownload()
-                }) { Text(stringResource(R.string.settings_about_update_confirm)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showUpdateDialog = false }) { Text(stringResource(R.string.general_cancel)) }
-            },
-        )
     }
 }

@@ -17,7 +17,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "net.dom53.inkita"
+        applicationId = "com.iquintero.kavern"
         minSdk = 28
         targetSdk = 36
         versionCode = 11

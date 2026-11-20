@@ -25,7 +25,6 @@ import net.dom53.inkita.core.network.NetworkMonitor
 import net.dom53.inkita.core.notification.AppNotificationManager
 import net.dom53.inkita.core.storage.AppPreferences
 import net.dom53.inkita.core.sync.ProgressSyncWorker
-import net.dom53.inkita.core.update.UpdateChecker
 import net.dom53.inkita.data.local.db.InkitaDatabase
 import net.dom53.inkita.data.repository.AuthRepositoryImpl
 import net.dom53.inkita.data.repository.CollectionsRepositoryImpl
@@ -116,28 +115,6 @@ object StartupManager {
                     }
                 }
             }.launchIn(logScope)
-        // Check for app updates and post a notification if available (best-effort).
-        appScope.launch {
-            val hasPermission =
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    ContextCompat.checkSelfPermission(
-                        appContext,
-                        Manifest.permission.POST_NOTIFICATIONS,
-                    ) == PackageManager.PERMISSION_GRANTED
-                } else {
-                    true
-                }
-            if (hasPermission) {
-                runCatching { UpdateChecker.checkForUpdate(appContext) }
-                    .onFailure { e ->
-                        if (LoggingManager.isDebugEnabled()) {
-                            LoggingManager.w("UpdateChecker", "Missing notification permission", e)
-                        }
-                    }
-            } else if (LoggingManager.isDebugEnabled()) {
-                LoggingManager.d("UpdateChecker", "Skipping update check: notifications permission not granted")
-            }
-        }
         appScope.launch(Dispatchers.IO) {
             val tempDir = DownloadPaths.pdfTempDir(appContext)
             if (tempDir.exists()) {
