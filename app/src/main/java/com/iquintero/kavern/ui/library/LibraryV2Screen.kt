@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -284,6 +285,8 @@ fun LibraryV2Screen(
         ) {
             TopAppBar(
                 title = { Text(text = topTitle) },
+                // The app Scaffold already pads for the status bar.
+                windowInsets = WindowInsets(0),
                 navigationIcon = {
                     IconButton(onClick = { scope.launch { drawerState.open() } }) {
                         Icon(Icons.Filled.Menu, contentDescription = stringResource(R.string.library_open_menu))
