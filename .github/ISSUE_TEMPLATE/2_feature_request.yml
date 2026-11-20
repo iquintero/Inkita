@@ -1,12 +1,12 @@
 name: Feature request
-description: Suggest a feature or improvement for Inkita
+description: Suggest a feature or improvement for Kavern
 labels: [feature]
 body:
   - type: textarea
     id: feature-description
     attributes:
       label: Describe your suggested feature
-      description: What should be added or improved in Inkita?
+      description: What should be added or improved in Kavern?
       placeholder: |
         Example:
           "Add offline caching for chapters..."

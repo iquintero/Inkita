@@ -1,5 +1,5 @@
 name: Issue report
-description: Report a bug in Inkita
+description: Report a bug in Kavern
 labels: [bug]
 body:
   - type: textarea
@@ -47,9 +47,9 @@ body:
         Upload the file or paste crash logs.
 
   - type: input
-    id: inkita-version
+    id: kavern-version
     attributes:
-      label: Inkita version
+      label: Kavern version
       description: You can find this in Settings → About.
       placeholder: |
         Example: "0.3.0"
@@ -101,7 +101,7 @@ body:
           required: true
         - label: I have written a clear and descriptive title.
           required: true
-        - label: I have updated the app to the latest available Inkita version.
+        - label: I have updated the app to the latest available Kavern version.
           required: true
         - label: I have filled out all requested details including device and Android version.
           required: true

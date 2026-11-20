@@ -6,6 +6,12 @@ All notable changes to this project will be documented here.
 
 ### Added
 
+- Kavern is now a fork of Inkita with its own name, package and application ID, so it installs alongside the original app. The in-app updater and the permission to install other apps were removed.
+- Home is now a single grid of your series sorted by last read.
+- Reading progress bars on series covers in the library.
+- E-ink mode (Settings > Reader > General) that turns off page-turn and screen animations.
+- "Volume keys turn pages" reader setting. Page buttons on e-readers always turn pages.
+- Word lookup (Define) in the EPUB reader.
 - Optional page-by-page EPUB reading (Reader settings, Navigation tab, or Settings > Reader). Each book page is split into screen-sized pages that you turn by tapping the left or right edge of the screen or swiping, like an e-reader. Off by default; scrolling is unchanged.
 - Table of contents button in the EPUB reader to jump to any chapter or section, including its position inside the page.
 - "Keep screen on" reader setting (Settings > Reader > General) that stops the screen from dimming or locking while a book is open. Off by default.
