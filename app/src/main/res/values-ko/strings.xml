@@ -276,8 +276,6 @@
     <string name="settings_about_check_updates">업데이트 확인</string>
     <string name="settings_about_label_community">커뮤니티</string>
     <string name="settings_about_label_contribute">기여</string>
-    <string name="settings_about_help_transalate">번역을 도와주세요</string>
-    <string name="settings_about_kofi">Ko-fi에서 지원하기</string>
 
     <!-- About Kavern -->
     <string name="settings_about_osl">오픈 소스 라이선스</string>

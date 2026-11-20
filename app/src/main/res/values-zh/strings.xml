@@ -276,8 +276,6 @@
     <string name="settings_about_check_updates">检查更新</string>
     <string name="settings_about_label_community">社区</string>
     <string name="settings_about_label_contribute">作出贡献</string>
-    <string name="settings_about_help_transalate">帮助翻译</string>
-    <string name="settings_about_kofi">在 Ko-fi 支持</string>
 
     <!-- About Kavern -->
     <string name="settings_about_osl">开源许可证</string>
