@@ -1,32 +1,35 @@
 package com.iquintero.kavern.ui.navigation
 
+import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.LibraryBooks
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Update
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.iquintero.kavern.R
 
 sealed class MainScreen(
     val route: String,
-    val label: String,
+    @StringRes val label: Int,
     val icon: ImageVector,
 ) {
-    object LibraryV2 : MainScreen("library_v2", "Library", Icons.Filled.LibraryBooks)
+    object LibraryV2 : MainScreen("library_v2", R.string.nav_library, Icons.Filled.LibraryBooks)
 
-    object Updates : MainScreen("updates", "Updates", Icons.Filled.Update)
+    object Updates : MainScreen("updates", R.string.nav_updates, Icons.Filled.Update)
 
-    object History : MainScreen("history", "History", Icons.Filled.History)
+    object History : MainScreen("history", R.string.nav_history, Icons.Filled.History)
 
-    object Browse : MainScreen("browse", "Browse", Icons.Filled.Language)
+    object Browse : MainScreen("browse", R.string.nav_browse, Icons.Filled.Language)
 
-    object Downloads : MainScreen("downloads", "Downloads", Icons.Filled.Download)
-
-    object Settings : MainScreen("settings", "Settings", Icons.Filled.Settings)
+    object Downloads : MainScreen("downloads", R.string.nav_downloads, Icons.Filled.Download)
 
     companion object {
-        val items = listOf(LibraryV2, Updates, History, Browse, Downloads, Settings)
+        /** Top-level destinations shown in the navigation bar or rail (at most five, per Material). */
+        val items = listOf(LibraryV2, Updates, History, Browse, Downloads)
+
+        /** Settings is opened from the Library top bar, not from the navigation bar. */
+        const val SETTINGS_ROUTE = "settings"
     }
 }

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Lock
@@ -23,6 +24,7 @@ import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -81,6 +83,7 @@ fun SettingsScreen(
     authRepository: AuthRepository,
     cacheManager: CacheManager,
     onOpenAbout: () -> Unit = {},
+    onBack: () -> Unit = {},
 ) {
     var selected by remember { mutableStateOf<SettingsCategory?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -112,11 +115,18 @@ fun SettingsScreen(
                             .fillMaxSize()
                             .padding(padding),
                 ) {
-                    Text(
-                        text = stringResource(R.string.settings_title),
-                        style = MaterialTheme.typography.headlineSmall,
-                        modifier = Modifier.padding(16.dp),
-                    )
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.general_back))
+                        }
+                        Text(
+                            text = stringResource(R.string.settings_title),
+                            style = MaterialTheme.typography.titleLarge,
+                        )
+                    }
                     LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         contentPadding =

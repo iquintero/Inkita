@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.LocalLibrary
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.HorizontalDivider
@@ -44,6 +45,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -100,6 +102,7 @@ fun LibraryV2Screen(
     cacheManager: CacheManager,
     appPreferences: AppPreferences,
     onOpenSeries: (Int) -> Unit,
+    onOpenSettings: () -> Unit = {},
     initialCollectionId: Int? = null,
     initialCollectionName: String? = null,
 ) {
@@ -279,25 +282,19 @@ fun LibraryV2Screen(
         Column(
             modifier = Modifier.fillMaxSize(),
         ) {
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(
-                    onClick = {
-                        scope.launch { drawerState.open() }
-                    },
-                ) {
-                    Icon(Icons.Filled.Menu, contentDescription = null)
-                }
-                Text(
-                    text = topTitle,
-                    style = MaterialTheme.typography.titleMedium,
-                )
-            }
+            TopAppBar(
+                title = { Text(text = topTitle) },
+                navigationIcon = {
+                    IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                        Icon(Icons.Filled.Menu, contentDescription = stringResource(R.string.library_open_menu))
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onOpenSettings) {
+                        Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.nav_settings))
+                    }
+                },
+            )
             when (uiState.selectedSection) {
                 LibraryV2Section.Home -> {
                     if (uiState.homeLoadFailed && uiState.homeSeries.isEmpty()) {
