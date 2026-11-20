@@ -1,22 +1,13 @@
 <div align="center">
 
-<a href="https://github.com/dom-53/Inkita">
-    <img src="./.github/assets/inkita-logo.png" alt="Inkita logo" title="Inkita logo" width="80"/>
-</a>
+<img src="./.github/assets/inkita-logo.png" alt="Kavern logo" title="Kavern logo" width="80"/>
 
-# Inkita
+# Kavern
 
  Unofficial Android reader for your self-hosted **Kavita** library.
 
-[![CI](https://img.shields.io/github/actions/workflow/status/dom-53/Inkita/release.yml?labelColor=27303D)](https://github.com/dom-53/Inkita/actions/workflows/release.yml)
 ![Platform](https://img.shields.io/badge/platform-Android-blue)
 ![Kavita](https://img.shields.io/badge/Kavita-nightly_0.9.1.20-orange)
-
-<br>
-
-[//]: # ([![Inkita Stable]&#40;https://img.shields.io/github/release/dom-53/Inkita.svg?maxAge=3600&label=Stable&labelColor=06599d&color=043b69&#41;]&#40;https://github.com/dom-53/Inkita/releases&#41;)
-[![Inkita Preview](https://img.shields.io/github/v/release/dom-53/Inkita?include_prereleases&sort=date&filter=*-*&label=Preview&labelColor=2c2c47&color=1c1c39)](https://github.com/dom-53/Inkita/releases)
-
 
 </div>
 
@@ -24,44 +15,32 @@
 
 ## Overview
 
-Inkita is a Kotlin/Jetpack Compose Android app to browse and read from your Kavita server. It aims for fast navigation, a clean reader, and tight API integration (collections, progress, metadata).
+Kavern is a Kotlin/Jetpack Compose Android app to browse and read from your Kavita server. It aims for fast navigation, a clean reader, and tight API integration (collections, progress, metadata).
+
+Kavern is a fork of [Inkita](https://github.com/dom-53/Inkita) by [dom-53](https://github.com/dom-53). Most of the app is their work, and this project would not exist without it. Thank you!
 
 **Tech:** Kotlin, Jetpack Compose (Material 3), Retrofit/OkHttp, WorkManager, Room/DataStore.
-**Formats:** EPUB (primary); other formats planned.
+**Formats:** EPUB (primary), comics/images and PDF.
 **Status:** Preview (0.x); APIs and UI may change.
-
-<div align="center">
-
-<a href="https://github.com/dom-53/Inkita/blob/master/.github/assets/inkita-prew.png">
-    <img src="./.github/assets/inkita-prew.png" alt="Inkita logo" title="Inkita logo" width="160"/>
-</a>
-
-</div>
 
 ---
 
 ## Features
 
 - Browse libraries, collections, tags, genres with filters.
+- Home screen showing your series sorted by last read, with reading progress on every cover.
 - Series detail with covers, metadata, tags, related items, specials.
-- Reader with progress sync, offline mode, downloaded page handling, “delete after reading” depth.
+- EPUB reader with paged reading, word lookup (Define), progress sync, offline mode, downloaded page handling, “delete after reading” depth.
+- E-ink mode that turns off page-turn and screen animations.
+- Optional hardware page buttons and volume keys for turning pages.
 - Downloads: queue, per-volume/page downloads; foreground notifications via a shared manager.
 - Network-aware: connectivity monitor, offline toggle, WorkManager constraints.
-- Update check: fetches `updates.json` (preview/stable channels) and can download a new APK.
-
----
-
-## Download
-
-- **Preview** (alpha/beta): universal APKs are published in [Releases](https://github.com/dom-53/Inkita/releases).
-- **Update feed:** `https://dom-53.github.io/Inkita/updates.json` (app uses it for update checks).
-- **Stable:** not published yet (0.x).
 
 ---
 
 ## Connecting to your Kavita server
 
-Inkita ships without any preset server configuration. After the first launch:
+Kavern ships without any preset server configuration. After the first launch:
 
 1. Open **Settings → Kavita**.
 2. Fill in your server URL credentials and your Kavita API key.
@@ -79,6 +58,8 @@ Without these details the app cannot reach your server, so make sure to keep the
 
 > Requires your own Kavita server; no content is bundled.
 
+Kavern has no built-in updater and no prebuilt releases; build the APK yourself.
+
 ---
 
 ## Contributing
@@ -90,28 +71,13 @@ Contributions are welcome (bugfixes, UX polish, docs). Please:
 - Before opening an issue, check if it already exists.
 - Before opening a PR, run `./gradlew detekt spotlessApply`.
 
-## Help Translate
-- Contribute translations on [POEditor](https://poeditor.com/join/project/XLBygoGhOX)
-
 ## Logs / Debug
-- You can export or save anonymized logs from **Settings → Advanced → Logs**; saved zips are written to `Documents/Inkita/logs`.
+- You can export or save anonymized logs from **Settings → Advanced → Logs**; saved zips are written to `Documents/Kavern/logs`.
 - Sensitive data (host/IP/API key) is anonymized in log files and exports.
 - For bug reports: enable **Verbose logging**, reproduce the issue, then attach the exported ZIP to your issue/report.
 
 ---
 
-## Support
-
-If you find Inkita useful, you can support development on Ko-fi: https://ko-fi.com/dom53
-
----
-
 ## Disclaimer
 
-Inkita is an unofficial community project, not affiliated with the Kavita team. Use at your own risk; APIs and behavior may change in 0.x releases.
-
----
-
-## Note from the author
-
-This is my first Android app in Kotlin; parts of the code may not be perfectly optimized yet. I’m steadily improving and refactoring to get it into the best shape possible. Thanks for your patience and feedback!
+Kavern is an unofficial community project, not affiliated with the Kavita team or the original Inkita project. Use at your own risk; APIs and behavior may change in 0.x releases.
