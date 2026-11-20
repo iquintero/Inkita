@@ -4,10 +4,10 @@ Steps to confirm the API key lives only in encrypted prefs:
 
 1) Install and run the app (debuggable build) so migration runs in `StartupManager`.
 2) Check that encrypted prefs exist:
-   - `adb shell run-as net.dom53.inkita ls shared_prefs` → should list `secure_prefs.xml`.
-   - `adb shell run-as net.dom53.inkita cat shared_prefs/secure_prefs.xml` → shows encrypted blobs (expected).
+   - `adb shell run-as com.iquintero.kavern ls shared_prefs` → should list `secure_prefs.xml`.
+   - `adb shell run-as com.iquintero.kavern cat shared_prefs/secure_prefs.xml` → shows encrypted blobs (expected).
 3) Ensure plain DataStore no longer holds sensitive keys:
-   - `adb shell run-as net.dom53.inkita strings files/datastore/inkita_prefs.preferences_pb | Select-String "api_key"` → should be empty output.
+   - `adb shell run-as com.iquintero.kavern strings files/datastore/kavern_prefs.preferences_pb | Select-String "api_key"` → should be empty output.
 4) If you need logging for migration, temporarily add a `Log.d("SecureStorage", "...")` inside `migrateSensitiveIfNeeded()`/setters and filter Logcat with `tag:SecureStorage` (remove afterwards).
 
 Notes:

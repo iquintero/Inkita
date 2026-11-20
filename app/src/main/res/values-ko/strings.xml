@@ -267,7 +267,7 @@
     <string name="settings_kavita_http_warning_confirm">HTTP로 계속</string>
     <string name="settings_kavita_http_warning_cancel">취소</string>
 
-    <!-- About Inkita -->
+    <!-- About Kavern -->
     <string name="settings_about_version">버전</string>
     <string name="settings_about_build_time">빌드 시간</string>
     <string name="settings_about_label_whats_new">새로운 소식</string>
@@ -279,7 +279,7 @@
     <string name="settings_about_help_transalate">번역을 도와주세요</string>
     <string name="settings_about_kofi">Ko-fi에서 지원하기</string>
 
-    <!-- About Inkita -->
+    <!-- About Kavern -->
     <string name="settings_about_osl">오픈 소스 라이선스</string>
     <string name="settings_about_osl_3rd">제3자 라이브러리</string>
     <string name="settings_about_license">라이선스</string>
@@ -291,7 +291,7 @@
     <string name="settings_about_update_confirm">다운로드</string>
 
     <!-- Others -->
-    <string name="settings_about_title">Inkita에 대하여</string>
+    <string name="settings_about_title">Kavern에 대하여</string>
     <string name="settings_about_website">Kavita 웹사이트</string>
     <string name="settings_kavita_login_toast">URL과 API 키를 입력하십시오.</string>
     <string name="settings_appearance_by_system">시스템 설정</string>
@@ -307,7 +307,7 @@
     <string name="update_notification_title">업데이트 가능: %1$s</string>
     <string name="update_notification_text">탭하여 최신 버전을 다운로드합니다.</string>
     <string name="update_checking_title">업데이트 확인 중…</string>
-    <string name="update_checking_text">새 Inkita 빌드를 찾고 있습니다.</string>
+    <string name="update_checking_text">새 Kavern 빌드를 찾고 있습니다.</string>
     <string name="notifications_prompt_title">알림 활성화</string>
     <string name="notifications_prompt_body">업데이트 및 다운로드 알림을 받으려면 알림을 허용해 주십시오.</string>
     <string name="notifications_prompt_accept">활성화</string>

@@ -1,0 +1,25 @@
+package com.iquintero.kavern.data.api.dto
+
+data class VolumeDto(
+    val id: Int,
+    val minNumber: Float? = null,
+    val maxNumber: Float? = null,
+    val name: String?,
+    val title: String? = null,
+    val number: Int? = null,
+    val pages: Int? = null,
+    val pagesRead: Int? = null,
+    val lastModifiedUtc: String? = null,
+    val createdUtc: String? = null,
+    val created: String? = null,
+    val lastModified: String? = null,
+    val seriesId: Int? = null,
+    val chapters: List<ChapterDto>?,
+    val minHoursToRead: Int? = null,
+    val maxHoursToRead: Int? = null,
+    val avgHoursToRead: Float? = null,
+    val wordCount: Long? = null,
+    val coverImage: String? = null,
+    val primaryColor: String? = null,
+    val secondaryColor: String? = null,
+)

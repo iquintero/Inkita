@@ -1,0 +1,24 @@
+package com.iquintero.kavern.data.api.dto
+
+data class LibraryDto(
+    val id: Int,
+    val name: String? = null,
+    val lastScanned: String? = null,
+    val type: Int,
+    val coverImage: String? = null,
+    val includeInDashboard: Boolean,
+    val includeInRecommended: Boolean,
+    val manageCollections: Boolean,
+    val manageReadingLists: Boolean,
+    val includeInSearch: Boolean,
+    val allowScrobbling: Boolean,
+    val folders: List<String>? = null,
+    val collapseSeriesRelationships: Boolean,
+    val libraryFileTypes: List<Int>? = null,
+    val excludePatterns: List<String>? = null,
+    val allowMetadataMatching: Boolean,
+    val enableMetadata: Boolean,
+    val removePrefixForSortName: Boolean,
+    val inheritWebLinksFromFirstChapter: Boolean,
+    val defaultLanguage: String? = null,
+)

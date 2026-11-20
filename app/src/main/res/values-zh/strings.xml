@@ -267,7 +267,7 @@
     <string name="settings_kavita_http_warning_confirm">使用 HTTP 继续</string>
     <string name="settings_kavita_http_warning_cancel">取消</string>
 
-    <!-- About Inkita -->
+    <!-- About Kavern -->
     <string name="settings_about_version">版本</string>
     <string name="settings_about_build_time">构建时间</string>
     <string name="settings_about_label_whats_new">新增内容</string>
@@ -279,7 +279,7 @@
     <string name="settings_about_help_transalate">帮助翻译</string>
     <string name="settings_about_kofi">在 Ko-fi 支持</string>
 
-    <!-- About Inkita -->
+    <!-- About Kavern -->
     <string name="settings_about_osl">开源许可证</string>
     <string name="settings_about_osl_3rd">第三方库</string>
     <string name="settings_about_license">许可证</string>
@@ -291,7 +291,7 @@
     <string name="settings_about_update_confirm">下载</string>
 
     <!-- Others -->
-    <string name="settings_about_title">关于 Inkita</string>
+    <string name="settings_about_title">关于 Kavern</string>
     <string name="settings_about_website">Kavita 网页</string>
     <string name="settings_kavita_login_toast">Fill URL and API key.</string>
     <string name="settings_appearance_by_system">跟随系统</string>
@@ -307,7 +307,7 @@
     <string name="update_notification_title">更新可用：%1$s</string>
     <string name="update_notification_text">点击下载最新版本。</string>
     <string name="update_checking_title">检查更新中…</string>
-    <string name="update_checking_text">Looking for a newer Inkita build.</string>
+    <string name="update_checking_text">Looking for a newer Kavern build.</string>
     <string name="notifications_prompt_title">启用通知</string>
     <string name="notifications_prompt_body">Please allow notifications so we can alert you about updates and downloads.</string>
     <string name="notifications_prompt_accept">启用</string>

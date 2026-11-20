@@ -1,0 +1,44 @@
+package com.iquintero.kavern.domain.model
+
+data class ReaderProgress(
+    val chapterId: Int,
+    val page: Int? = null,
+    val bookScrollId: String? = null,
+    val seriesId: Int? = null,
+    val volumeId: Int? = null,
+    val libraryId: Int? = null,
+    val lastModifiedUtcMillis: Long = 0L,
+)
+
+data class ReaderBookInfo(
+    val pages: Int? = null,
+    val seriesId: Int? = null,
+    val volumeId: Int? = null,
+    val libraryId: Int? = null,
+    val title: String? = null,
+    val pageTitle: String? = null,
+    val chapterNumber: String? = null,
+)
+
+data class ReaderTimeLeft(
+    val minHours: Double? = null,
+    val maxHours: Double? = null,
+    val avgHours: Double? = null,
+)
+
+data class ReaderChapterNav(
+    val seriesId: Int? = null,
+    val volumeId: Int? = null,
+    val chapterId: Int? = null,
+    val pagesRead: Int? = null,
+)
+
+/** One entry of an EPUB table of contents, flattened in reading order. */
+data class ReaderTocItem(
+    val title: String,
+    /** Kavita page (spine file) index the entry lives in. */
+    val page: Int,
+    /** Element id inside that page, or null to open the page from its start. */
+    val anchor: String? = null,
+    val depth: Int = 0,
+)

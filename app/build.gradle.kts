@@ -11,7 +11,7 @@ plugins {
 }
 
 android {
-    namespace = "net.dom53.inkita"
+    namespace = "com.iquintero.kavern"
     compileSdk {
         version = release(36)
     }

@@ -19,5 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Inkita"
+rootProject.name = "Kavern"
 include(":app")

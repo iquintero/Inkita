@@ -417,7 +417,7 @@
     <string name="settings_kavita_ca_invalid">Could not import the file. Choose a valid root CA certificate in PEM or DER format.</string>
     <string name="settings_kavita_http_error">The server returned HTTP %1$d. Check the Kavita address and try again.</string>
     <string name="settings_kavita_unexpected_response">The server returned an unexpected response. Check the Kavita address.</string>
-    <!-- About Inkita  -->
+    <!-- About Kavern  -->
     <string name="settings_about_version">Version</string>
     <string name="settings_about_build_time">Build time</string>
     <string name="settings_about_label_whats_new">What\'s new</string>
@@ -437,11 +437,11 @@
     <string name="settings_about_update_downloading">Downloading update…</string>
     <string name="settings_about_update_download_failed">Could not download the update.</string>
     <string name="settings_about_update_install_failed">Could not open the Android installer.</string>
-    <string name="settings_about_update_allow_install">Allow installation from Inkita, then return to finish the update.</string>
+    <string name="settings_about_update_allow_install">Allow installation from Kavern, then return to finish the update.</string>
     <string name="settings_about_update_prompt">A new version is available. Do you want to download and install it now?</string>
     <string name="settings_about_update_confirm">Download</string>
     <!-- Others  -->
-    <string name="settings_about_title">About Inkita</string>
+    <string name="settings_about_title">About Kavern</string>
     <string name="settings_about_website">Kavita Website</string>
     <string name="settings_kavita_login_toast">Fill URL and API key.</string>
     <string name="settings_appearance_by_system">Follow system</string>
@@ -457,7 +457,7 @@
     <string name="update_notification_title">Update available: %1$s</string>
     <string name="update_notification_text">Tap to download the latest version.</string>
     <string name="update_checking_title">Checking for updates…</string>
-    <string name="update_checking_text">Looking for a newer Inkita build.</string>
+    <string name="update_checking_text">Looking for a newer Kavern build.</string>
     <string name="notifications_prompt_title">Enable notifications</string>
     <string name="notifications_prompt_body">Please allow notifications so we can alert you about updates and downloads.</string>
     <string name="notifications_prompt_accept">Enable</string>
@@ -555,7 +555,7 @@
     <string name="settings_downloads_location_confirm_text">Existing downloads will be moved to the selected location. If anything fails, the current location will remain unchanged.</string>
     <string name="settings_downloads_location_confirm_action">Move downloads</string>
     <string name="settings_downloads_location_moving_title">Moving downloads</string>
-    <string name="settings_downloads_location_moving_text">Please keep Inkita open while downloaded files are moved.</string>
+    <string name="settings_downloads_location_moving_text">Please keep Kavern open while downloaded files are moved.</string>
     <string name="settings_downloads_location_changed">Download location updated</string>
     <string name="settings_downloads_location_failed">Could not change download location: %1$s</string>
     <string name="settings_downloads_location_queue_busy">Finish, pause, or clear the download queue before changing location.</string>

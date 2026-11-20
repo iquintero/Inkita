@@ -1,0 +1,74 @@
+package com.iquintero.kavern.ui.reader.screen
+
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.iquintero.kavern.core.downloadv2.DownloadPaths
+import com.iquintero.kavern.core.logging.LoggingManager
+import com.iquintero.kavern.core.storage.AppPreferences
+import com.iquintero.kavern.domain.repository.ReaderRepository
+import com.iquintero.kavern.ui.reader.renderer.PdfReader
+import com.iquintero.kavern.ui.reader.viewmodel.PdfReaderViewModel
+
+@Composable
+fun PdfReaderScreen(
+    chapterId: Int,
+    initialPage: Int?,
+    readerRepository: ReaderRepository,
+    appPreferences: AppPreferences,
+    seriesId: Int?,
+    volumeId: Int?,
+    serverUrl: String?,
+    apiKey: String? = null,
+    onBack: (chapterId: Int, page: Int, seriesId: Int?, volumeId: Int?) -> Unit = { _, _, _, _ -> },
+    onNavigateToChapter: (Int, Int?, Int?, Int?) -> Unit = { _, _, _, _ -> },
+    topBarContent: (@Composable (String, String, () -> Unit) -> Unit)? = null,
+    bottomBarContent: (@Composable (ReaderBottomBarState, ReaderBottomBarCallbacks) -> Unit)? = null,
+    overlayExtras: @Composable BoxScope.() -> Unit = {},
+) {
+    val context = LocalContext.current
+    DisposableEffect(chapterId) {
+        onDispose {
+            val tempFile = DownloadPaths.pdfTempFile(context, appPreferences.profile, chapterId)
+            if (tempFile.exists()) {
+                tempFile.delete()
+                if (LoggingManager.isDebugEnabled()) {
+                    LoggingManager.d(
+                        "PdfReader",
+                        "Deleted temp PDF after reader exit: ${tempFile.absolutePath}",
+                    )
+                }
+            }
+        }
+    }
+    BaseReaderScreen(
+        chapterId = chapterId,
+        initialPage = initialPage,
+        readerViewModel =
+            viewModel(
+                key = "reader-$chapterId",
+                factory =
+                    PdfReaderViewModel.Companion.provideFactory(
+                        chapterId = chapterId,
+                        initialPage = initialPage ?: 0,
+                        readerRepository = readerRepository,
+                        seriesId = seriesId,
+                        volumeId = volumeId,
+                    ),
+            ),
+        appPreferences = appPreferences,
+        seriesId = seriesId,
+        volumeId = volumeId,
+        serverUrl = serverUrl,
+        apiKey = apiKey,
+        renderer = PdfReader,
+        onBack = onBack,
+        onNavigateToChapter = onNavigateToChapter,
+        topBarContent = topBarContent,
+        bottomBarContent = bottomBarContent,
+        settingsContent = null,
+        overlayExtras = overlayExtras,
+    )
+}

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
     <external-files-path name="downloads" path="download/" />
-    <external-files-path name="pdfs" path="Download/Inkita/pdfs/" />
+    <external-files-path name="pdfs" path="Download/Kavern/pdfs/" />
     <cache-path name="logs" path="." />
 </paths>
