@@ -17,7 +17,7 @@
 
 Kavern is a Kotlin/Jetpack Compose Android app to browse and read from your Kavita server. It aims for fast navigation, a clean reader, and tight API integration (collections, progress, metadata).
 
-Kavern is a fork of [Inkita](https://github.com/dom-53/Inkita) by [dom-53](https://github.com/dom-53). Most of the app is their work, and this project would not exist without it. Thank you!
+Kavern is a fork of [Inkita](https://github.com/dom-53/Inkita) by [dom-53](https://github.com/dom-53). This project would not exist without their work. Thank you!
 
 **Tech:** Kotlin, Jetpack Compose (Material 3), Retrofit/OkHttp, WorkManager, Room/DataStore.
 **Formats:** EPUB (primary), comics/images and PDF.
